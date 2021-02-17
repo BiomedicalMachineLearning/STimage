@@ -211,6 +211,7 @@ def Read10X(
     count_file: str = "filtered_feature_bc_matrix.h5",
     library_id: str = None,
     load_images: Optional[bool] = True,
+    source_image_path: Union[str, Path, None] = None,
     quality: str = "hires"
     ) -> AnnData:
     
@@ -271,7 +272,8 @@ def Read10X(
     adata = read_visium(path, genome=None,
      count_file=count_file,
       library_id=library_id,
-       load_images=True)
+       load_images=load_images,
+        source_image_path=source_image_path)
     adata.var_names_make_unique()
 
     adata.obs['sum_counts'] = np.array(adata.X.sum(axis=1))
@@ -279,9 +281,12 @@ def Read10X(
     
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
-        
-    scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_"+quality+"_scalef"]
-    image_coor = adata.obsm["spatial"]*scale
+
+    if quality == "fullres":
+        image_coor = adata.obsm["spatial"]
+    else:
+        scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_"+quality+"_scalef"]
+        image_coor = adata.obsm["spatial"]*scale
 
     adata.obs["imagecol"] = image_coor[:,0]
     adata.obs["imagerow"] = image_coor[:,1]
@@ -329,92 +334,3 @@ def ReadOldST(
     adata.obs['sum_counts'] = np.array(adata.X.sum(axis=1))
 
     return adata
-
-
-import tensorflow as tf
-
-from tensorflow import keras
-from tensorflow.keras.layers import Input, Dense, Lambda, Dropout
-from tensorflow.keras.models import Model
-from tensorflow.keras.losses import BinaryCrossentropy
-
-
-def negative_binomial_layer(x):
-    """
-    Lambda function for generating negative binomial parameters
-    n and p from a Dense(2) output.
-    Assumes tensorflow 2 backend.
-    
-    Usage
-    -----
-    outputs = Dense(2)(final_layer)
-    distribution_outputs = Lambda(negative_binomial_layer)(outputs)
-    
-    Parameters
-    ----------
-    x : tf.Tensor
-        output tensor of Dense layer
-        
-    Returns
-    -------
-    out_tensor : tf.Tensor
-        
-    """
-    
-    # Get the number of dimensions of the input
-    num_dims = len(x.get_shape())
-    
-    # Separate the parameters
-    n, p = tf.unstack(x, num=2, axis=-1)
-    
-    # Add one dimension to make the right shape
-    n = tf.expand_dims(n, -1)
-    p = tf.expand_dims(p, -1)
-        
-    # Apply a softplus to make positive
-    n = tf.keras.activations.softplus(n)
-    
-    # Apply a sigmoid activation to bound between 0 and 1
-    p = tf.keras.activations.sigmoid(p)
-
-    # Join back together again
-    out_tensor = tf.concat((n, p), axis=num_dims-1)
-
-    return out_tensor
-
-
-def negative_binomial_loss(y_true, y_pred):
-    """
-    Negative binomial loss function.
-    Assumes tensorflow backend.
-    
-    Parameters
-    ----------
-    y_true : tf.Tensor
-        Ground truth values of predicted variable.
-    y_pred : tf.Tensor
-        n and p values of predicted distribution.
-        
-    Returns
-    -------
-    nll : tf.Tensor
-        Negative log likelihood.
-    """
-
-    # Separate the parameters
-    n, p = tf.unstack(y_pred, num=2, axis=-1)
-    
-    # Add one dimension to make the right shape
-    n = tf.expand_dims(n, -1)
-    p = tf.expand_dims(p, -1)
-    
-    # Calculate the negative log likelihood
-    nll = (
-        tf.math.lgamma(n) 
-        + tf.math.lgamma(y_true + 1)
-        - tf.math.lgamma(n + y_true)
-        - n * tf.math.log(p)
-        - y_true * tf.math.log(1 - p)
-    )                  
-
-    return nll
