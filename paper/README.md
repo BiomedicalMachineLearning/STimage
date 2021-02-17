@@ -1,3 +1,8 @@
+# outline of STimage paper
+- benchmark with xfuse, st-net, tangram
+- biological stories: brain anatomy and cancer
+- validation (human protein atlas, allenbrain atlas -> predict H&E), experimental (RNAscope, NanoString, ISH)
+
 # relevant paper
 
 ## Xfuse
