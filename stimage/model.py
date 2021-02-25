@@ -1,10 +1,10 @@
 import tensorflow as tf
 
 from tensorflow import keras
-from tensorflow.keras.layers import Input, Dense, Lambda, Dropout
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, concatenate, Dropout, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy
-
+from tensorflow.keras.applications.resnet50 import ResNet50
 
 def negative_binomial_layer(x):
     """
@@ -123,4 +123,30 @@ def CNN_linear_model():
     model.compile(loss='mse',
                   optimizer=optimizer,
                   metrics=['mse'])
+    return model
+
+
+def CNN_NB_trainable(tile_shape):
+    tile_input = Input(shape=tile_shape, name = "tile_input")
+    resnet_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
+    stage_5_start = resnet_base.get_layer("conv5_block1_1_conv")
+    for i in range(resnet_base.layers.index(stage_5_start)):
+        resnet_base.layers[i].trainable = False
+
+    cnn = resnet_base.output
+    cnn = GlobalAveragePooling2D()(cnn)
+    cnn = Dropout(0.5)(cnn)
+    cnn = Dense(512, activation='relu', kernel_regularizer=keras.regularizers.l1(0.1),
+                activity_regularizer=keras.regularizers.l2(0.1))(cnn)
+    # cnn = Dense(256, activation='relu')(cnn)
+    outputs = Dense(2)(cnn)
+    distribution_outputs = Lambda(negative_binomial_layer)(outputs)
+    model = Model(inputs=tile_input, outputs=distribution_outputs)
+
+    # optimizer = tf.keras.optimizers.RMSprop(0.0001)
+    optimizer = tf.keras.optimizers.Adam()
+
+    model.compile(loss=negative_binomial_loss,
+                  optimizer=optimizer,
+                  metrics=[negative_binomial_loss])    
     return model
