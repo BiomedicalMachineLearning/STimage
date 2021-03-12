@@ -19,6 +19,8 @@ def gene_plot(
     library_id: str = None,
     data_alpha: float = 1.0,
     tissue_alpha: float = 1.0,
+    vmin: float = None,
+    vmax: float = None,
     cmap: str = "Spectral_r",
     spot_size: Union[float, int] = 6.5,
     show_legend: bool = False,
@@ -94,9 +96,14 @@ def gene_plot(
 
     # Initialize matplotlib
     fig, a = plt.subplots()
-
-    vmin = min(colors)
-    vmax = max(colors)
+    if vmin:
+        vmin=vmin
+    else:
+        vmin = min(colors)
+    if vmax:
+        vmax=vmax
+    else:
+        vmax = max(colors)
     # Plot scatter plot based on pixel of spots
     plot = a.scatter(imagecol, imagerow, edgecolor="none", alpha=data_alpha, s=spot_size, marker="o",
                      vmin=vmin, vmax=vmax, cmap=plt.get_cmap(cmap), c=colors)
