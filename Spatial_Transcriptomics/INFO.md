@@ -9,3 +9,7 @@ Gene_Selection --> 1) Filter those genes which are common in Cancer vs Non-Cance
 GeneExpression --> Continuous/Categorical Prediction of UMI Counts in an image.
 
 CNN_BreastCancer10X --> CNN to predict which genes are present in a single spot. [Multi-Label Classification]
+
+
+
+![image](https://user-images.githubusercontent.com/47315377/112247425-4d8e4400-8c7a-11eb-9975-840cdefa128a.png)
