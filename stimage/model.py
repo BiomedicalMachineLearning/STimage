@@ -6,6 +6,22 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.applications.resnet50 import ResNet50
 
+
+class PrinterCallback(tf.keras.callbacks.Callback):
+
+    # def on_train_batch_begin(self, batch, logs=None):
+    #     # Do something on begin of training batch
+
+    def on_epoch_end(self, epoch, logs=None):
+        print('EPOCH: {}, Train Loss: {}, Val Loss: {}'.format(epoch,
+                                                               logs['loss'],
+                                                               logs['val_loss']))
+
+    def on_epoch_begin(self, epoch, logs=None):
+        print('-'*50)
+        print('STARTING EPOCH: {}'.format(epoch))
+
+
 def negative_binomial_layer(x):
     """
     Lambda function for generating negative binomial parameters
@@ -149,4 +165,34 @@ def CNN_NB_trainable(tile_shape):
     model.compile(loss=negative_binomial_loss,
                   optimizer=optimizer,
                   metrics=[negative_binomial_loss])    
+    return model
+
+def CNN_NB_multiple_genes(tile_shape, n_genes):
+    tile_input = Input(shape=tile_shape, name = "tile_input")
+    resnet_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
+#     stage_5_start = resnet_base.get_layer("conv5_block1_1_conv")
+#     for i in range(resnet_base.layers.index(stage_5_start)):
+#         resnet_base.layers[i].trainable = False
+    
+    for i in resnet_base.layers:
+        i.trainable = False
+    cnn = resnet_base.output
+    cnn = GlobalAveragePooling2D()(cnn)
+#     cnn = Dropout(0.5)(cnn)
+#     cnn = Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.l1(0.01),
+#                 activity_regularizer=tf.keras.regularizers.l2(0.01))(cnn)
+    # cnn = Dense(256, activation='relu')(cnn)
+    output_layers = []
+    for i in range(n_genes):
+        output = Dense(2)(cnn)
+        output_layers.append(Lambda(negative_binomial_layer, name="gene_{}".format(i))(output))
+    
+    model = Model(inputs=tile_input, outputs=output_layers)
+#     losses={}
+#     for i in range(8):
+#         losses["gene_{}".format(i)] = negative_binomial_loss(i)
+#     optimizer = tf.keras.optimizers.RMSprop(0.001)
+    optimizer = tf.keras.optimizers.Adam(0.0001)
+    model.compile(loss=negative_binomial_loss,
+                  optimizer=optimizer)    
     return model

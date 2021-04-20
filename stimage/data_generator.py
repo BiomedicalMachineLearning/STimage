@@ -52,7 +52,9 @@ class DataGenerator(keras.utils.Sequence):
         return X_img
 
     def _load_label(self, obs):
-        return self.adata.to_df().loc[obs, self.genes]
+        batch_adata = self.adata[obs, self.genes].copy()
+        
+        return tuple([batch_adata.to_df()[i].values for i in self.genes])
 
     def get_classes(self):
         return self.adata.to_df().loc[:,self.genes]
