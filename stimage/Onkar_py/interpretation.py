@@ -17,36 +17,35 @@ from keras.preprocessing import image; import numpy as np; import h5py; from ker
 
 #%%
 
-def train_interpretation_model():
-    '''
-    Gene_exp_train = pd.read_csv('pivot_trial_Y.csv').sort_values(by="Sno").reset_index()
-    Biomarker_train = Gene_exp_train[['MALAT1']]
+def train_interpretation_model(Gene_exp_train, Gene_exp_test, gene_name, dir_train, dir_test):
+    
+    Biomarker_train = Gene_exp_train[[gene_name]]
     Biomarker_train = pd.DataFrame(data=Biomarker_train)
     Biomarker_train = Biomarker_train.apply(lambda x: pd.qcut(x, 3,duplicates='drop', labels=False))
     Biomarker_train["Image"] = Gene_exp_train[['Sno']] + str(".tif")
     Biomarker_train = Biomarker_train.rename(columns={Biomarker_train.columns[0]: 'Gene_cluster'})
     Biomarker_train["Gene_cluster"] = Biomarker_train["Gene_cluster"].astype('str') 
     
-    Gene_exp_test = pd.read_csv('pivot_test_Y.csv').sort_values(by="Sno").reset_index()
-    Biomarker_test = Gene_exp_test[['MALAT1']]
+    Biomarker_test = Gene_exp_test[[gene_name]]
     Biomarker_test = pd.DataFrame(data=Biomarker_test)
     Biomarker_test = Biomarker_test.apply(lambda x: pd.qcut(x, 3,duplicates='drop', labels=False))
     Biomarker_test["Image"] = Gene_exp_test[['Sno']] + str(".tif")
     Biomarker_test = Biomarker_test.rename(columns={Biomarker_test.columns[0]: 'Gene_cluster'})
-    Biomarker_test["Gene_cluster"] = Biomarker_test["Gene_cluster"].astype('str')
+    Biomarker_test["Gene_cluster"] = Biomarker_test["Gene_cluster"].astype('str') 
+
     datagen=ImageDataGenerator(rescale=1./255, validation_split = 0.2, featurewise_center=True,
             featurewise_std_normalization=False,rotation_range=90,
             width_shift_range=0.2,height_shift_range=0.2,
             horizontal_flip=True,vertical_flip=True)
     test_datagen = ImageDataGenerator(rescale=1./255,featurewise_center=True)
     
-    train_generator=datagen.flow_from_dataframe(dataframe=Biomarker_train, directory="Trainimg_breast_2_299", 
+    train_generator=datagen.flow_from_dataframe(dataframe=Biomarker_train, directory=dir_train, 
                                                 x_col="Image", y_col="Gene_cluster", class_mode="categorical", 
                                                 target_size=(290,290), batch_size=32, subset="training")
-    valid_generator = datagen.flow_from_dataframe(dataframe=Biomarker_train, directory="Trainimg_breast_2_299", 
+    valid_generator = datagen.flow_from_dataframe(dataframe=Biomarker_train, directory=dir_train, 
                                                   x_col="Image", y_col="Gene_cluster", class_mode="categorical", 
                                                   target_size=(290,290), batch_size=32, subset="validation")
-    test_generator = test_datagen.flow_from_dataframe(dataframe=Biomarker_test, directory="Trainimg_breast_test_299", 
+    test_generator = test_datagen.flow_from_dataframe(dataframe=Biomarker_test, directory=dir_test, 
                                                       x_col="Image", y_col="Gene_cluster", class_mode="categorical", 
                                                       target_size=(290,290), batch_size=32)
     model = ResNet50(include_top=False, input_shape=(290,290,3), weights = "imagenet")
@@ -60,11 +59,10 @@ def train_interpretation_model():
 
 
     model.compile(loss='categorical_crossentropy', optimizer="SGD", metrics=['AUC'])
-    history = model.fit(train_generator,validation_data=valid_generator,epochs=10, 
+    history = model.fit(train_generator,validation_data=valid_generator,epochs=50, 
                         callbacks=[checkpoint])
-    '''
     
-    model = load_model("Inception_model_COX6C_18") 
+    #model = load_model("Inception_model_COX6C_18") 
     return model
 
 
@@ -84,7 +82,7 @@ def LIME_heatmaps(im, sav):
     for i in range(0,len(im)):
         images = transform_img_fn([os.path.join('Trainimg_breast_2_299',im[i])])
         explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), train_interpretation_model().predict, top_labels=3, num_samples=8)
+        explanation = explainer.explain_instance(images[0].astype('double'), train_interpretation_model(Gene_exp_train, Gene_exp_test, gene_name, dir_train, dir_test).predict, top_labels=3, num_samples=8)
         dict_heatmap1 = dict(explanation.local_exp[explanation.top_labels[0]])
         dict_heatmap2 = dict(explanation.local_exp[explanation.top_labels[1]])
         dict_heatmap3 = dict(explanation.local_exp[explanation.top_labels[2]])
@@ -110,15 +108,20 @@ def LIME_heatmaps(im, sav):
         Lime3 = plt.imsave(str(explanation.top_labels[2])+"_"+sav[i], heatmap3, cmap = 'RdBu', vmin  = -heatmap3.max(), vmax = heatmap3.max())
         
         return Lime1, Lime2, Lime3
-
-#im = ['0073img.tif']; sav = ['0073.png']
-#LIME_heatmaps(im,sav)
-
-def activation_maps():
     
-    model = load_model("Inception_model_COX6C_18") 
+
+Gene_exp_train = pd.read_csv('Breast_1A_500_top.csv')
+Gene_exp_test = pd.read_csv('Breast_2A_500_top.csv')
+gene_name = 'COX6C'
+dir_train = "Trainimg_breast_2_299"
+dir_test = "Trainimg_breast_test_299"
+im = ['0073img.tif']; sav = ['0073.png']
+LIME_heatmaps(im,sav)
+#%%
+def activation_maps(image, model):
     
-    img = image.load_img('Trainimg_breast_2_299/0073img.tif', target_size=(290,290))
+    
+    img = image.load_img(image, target_size=(290,290))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
@@ -140,6 +143,9 @@ def activation_maps():
     plt.show()
     return act_map
 
-#activation_maps()
+image = 'Trainimg_breast_2_299/0073img.tif'
+model = load_model("Inception_model_COX6C_18") 
+
+activation_maps(image, model)
 
 #%%

@@ -1,12 +1,6 @@
-#resnet50
-#breast_top200
-#link_to_immg
-#pivot
-#gene_exp
-#gene_list
-
 #%%
 import pandas as pd; import numpy as np
+#%%
 
 ## Reading the DataFrame
 
@@ -43,9 +37,6 @@ Spot_gene_test = pd.read_csv('D:/onkar/Projects/Project_Spt.Transcriptomics/Spt_
 Gene_exp_test = pd.read_csv('C:/Users/Onkar/UntitledFolder/gene_exp_breast_can2.csv')
 dataframes_test(Spot_gene_test, Gene_exp_test)
 #%%
-
-import pandas as pd; import numpy as np
-
 ## Reading the DataFrame
 
 def dataframes_train(Spot_gene, Gene_exp):
@@ -73,10 +64,12 @@ def dataframes_train(Spot_gene, Gene_exp):
     top = top[s.index[:500]]
 
     #Save Files
-    Gene_file.to_csv('genes_file_breast_can2.csv') 
-    Link_img.to_csv('link_to_img_breast_can2.csv')
+    Gene_file.to_csv('genes_file_trial.csv') 
+    Link_img.to_csv('link_to_img_trial.csv')
     top.to_csv('Breast_2A_500_top.csv')
     
 Spot_gene_train = pd.read_csv('D:/onkar/Projects/Project_Spt.Transcriptomics/Spt_Trans/df.csv')
 Gene_exp_train = pd.read_csv('C:/Users/Onkar/UntitledFolder/gene_exp.csv')
 dataframes_test(Spot_gene_train, Gene_exp_train)
+
+#%%
