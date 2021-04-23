@@ -144,8 +144,7 @@ def activation_maps(image, model):
     return act_map
 
 image = 'Trainimg_breast_2_299/0073img.tif'
-model = load_model("Inception_model_COX6C_18") 
-
+model = train_interpretation_model(Gene_exp_train, Gene_exp_test, gene_name, dir_train, dir_test)
 activation_maps(image, model)
 
 #%%
