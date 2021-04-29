@@ -1,36 +1,30 @@
-from matplotlib import pyplot as plt
-from PIL import Image
-import pandas as pd
-import matplotlib
-import numpy as np
-
-from stlearn._compat import Literal
+import warnings
 from typing import Optional, Union
 from anndata import AnnData
-import warnings
-#from .utils import get_img_from_fig, checkType
+from matplotlib import pyplot as plt
+# from .utils import get_img_from_fig, checkType
 
 
 def gene_plot(
-    adata: AnnData,
-    method: str = "CumSum",
-    genes: Optional[Union[str, list]] = None,
-    threshold: float = None,
-    library_id: str = None,
-    data_alpha: float = 1.0,
-    tissue_alpha: float = 1.0,
-    vmin: float = None,
-    vmax: float = None,
-    cmap: str = "Spectral_r",
-    spot_size: Union[float, int] = 6.5,
-    show_legend: bool = False,
-    show_color_bar: bool = True,
-    show_axis: bool = False,
-    cropped: bool = True,
-    margin: int = 100,
-    name: str = None,
-    output: str = None,
-    copy: bool = False,
+        adata: AnnData,
+        method: str = "CumSum",
+        genes: Optional[Union[str, list]] = None,
+        threshold: float = None,
+        library_id: str = None,
+        data_alpha: float = 1.0,
+        tissue_alpha: float = 1.0,
+        vmin: float = None,
+        vmax: float = None,
+        cmap: str = "Spectral_r",
+        spot_size: Union[float, int] = 6.5,
+        show_legend: bool = False,
+        show_color_bar: bool = True,
+        show_axis: bool = False,
+        cropped: bool = True,
+        margin: int = 100,
+        name: str = None,
+        output: str = None,
+        copy: bool = False,
 ) -> Optional[AnnData]:
     """\
     Gene expression plot for sptial transcriptomics data.
@@ -75,33 +69,33 @@ def gene_plot(
     Nothing
     """
 
-    #plt.rcParams['figure.dpi'] = dpi
+    # plt.rcParams['figure.dpi'] = dpi
 
     if type(genes) == str:
         genes = [genes]
     colors = _gene_plot(adata, method, genes)
 
     if threshold is not None:
-        colors = colors[colors>threshold]
+        colors = colors[colors > threshold]
 
     index_filter = colors.index
 
-    filter_obs  = adata.obs.loc[index_filter]
+    filter_obs = adata.obs.loc[index_filter]
 
     imagecol = filter_obs["imagecol"]
     imagerow = filter_obs["imagerow"]
-    
+
     # Option for turning off showing figure
     plt.ioff()
 
     # Initialize matplotlib
     fig, a = plt.subplots()
     if vmin:
-        vmin=vmin
+        vmin = vmin
     else:
         vmin = min(colors)
     if vmax:
-        vmax=vmax
+        vmax = vmax
     else:
         vmax = max(colors)
     # Plot scatter plot based on pixel of spots
@@ -109,7 +103,6 @@ def gene_plot(
                      vmin=vmin, vmax=vmax, cmap=plt.get_cmap(cmap), c=colors)
 
     if show_color_bar:
-
         cb = plt.colorbar(plot, cax=fig.add_axes(
             [0.9, 0.3, 0.03, 0.38]), cmap=cmap)
         cb.outline.set_visible(False)
@@ -122,18 +115,18 @@ def gene_plot(
 
     image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]["use_quality"]]
     # Overlay the tissue image
-    a.imshow(image, alpha=tissue_alpha, zorder=-1,)
+    a.imshow(image, alpha=tissue_alpha, zorder=-1, )
 
     if cropped:
         imagecol = adata.obs["imagecol"]
         imagerow = adata.obs["imagerow"]
 
         a.set_xlim(imagecol.min() - margin,
-                imagecol.max() + margin)
+                   imagecol.max() + margin)
 
         a.set_ylim(imagerow.min() - margin,
-                imagerow.max() + margin)
-        
+                   imagerow.max() + margin)
+
         a.set_ylim(a.get_ylim()[::-1])
 
     if name is None:
@@ -141,16 +134,11 @@ def gene_plot(
     if output is not None:
         fig.savefig(output + "/" + name, dpi=plt.figure().dpi,
                     bbox_inches='tight', pad_inches=0)
-        
-    
-
 
     plt.show()
 
 
-
 def _gene_plot(adata, method, genes):
-
     # Gene plot option
 
     if len(genes) == 0:
@@ -202,26 +190,22 @@ def _gene_plot(adata, method, genes):
 
 """Reading and Writing
 """
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Optional, Union
 from anndata import AnnData
-import numpy as np
-from PIL import Image
 import pandas as pd
 import stlearn
-import scanpy
-import scipy
+
 
 def Read10X(
-    path: Union[str, Path],
-    genome: Optional[str] = None,
-    count_file: str = "filtered_feature_bc_matrix.h5",
-    library_id: str = None,
-    load_images: Optional[bool] = True,
-    source_image_path: Union[str, Path, None] = None,
-    quality: str = "hires"
-    ) -> AnnData:
-    
+        path: Union[str, Path],
+        genome: Optional[str] = None,
+        count_file: str = "filtered_feature_bc_matrix.h5",
+        library_id: str = None,
+        load_images: Optional[bool] = True,
+        source_image_path: Union[str, Path, None] = None,
+        quality: str = "hires"
+) -> AnnData:
     """\
     Read Visium data from 10X (wrap read_visium from scanpy)
 
@@ -274,43 +258,41 @@ def Read10X(
     :attr:`~anndata.AnnData.obsm`\\ `['spatial']`
         Spatial spot coordinates, usable as `basis` by :func:`~scanpy.pl.embedding`.
     """
-    
+
     from scanpy import read_visium
     adata = read_visium(path, genome=None,
-     count_file=count_file,
-      library_id=library_id,
-       load_images=load_images,
-        source_image_path=source_image_path)
+                        count_file=count_file,
+                        library_id=library_id,
+                        load_images=load_images,
+                        source_image_path=source_image_path)
     adata.var_names_make_unique()
 
     adata.obs['sum_counts'] = np.array(adata.X.sum(axis=1))
 
-    
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
     if quality == "fullres":
         image_coor = adata.obsm["spatial"]
     else:
-        scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_"+quality+"_scalef"]
-        image_coor = adata.obsm["spatial"]*scale
+        scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_" + quality + "_scalef"]
+        image_coor = adata.obsm["spatial"] * scale
 
-    adata.obs["imagecol"] = image_coor[:,0]
-    adata.obs["imagerow"] = image_coor[:,1]
+    adata.obs["imagecol"] = image_coor[:, 0]
+    adata.obs["imagerow"] = image_coor[:, 1]
     adata.uns["spatial"]["use_quality"] = quality
 
     return adata
 
 
 def ReadOldST(
-    count_matrix_file: Union[str, Path] = None,
-    spatial_file: Union[str, Path] = None,
-    image_file: Union[str, Path] = None,
-    library_id: str = "OldST",
-    scale: float = 1.0,
-    quality: str = "hires"
-    ) -> AnnData:
-
+        count_matrix_file: Union[str, Path] = None,
+        spatial_file: Union[str, Path] = None,
+        image_file: Union[str, Path] = None,
+        library_id: str = "OldST",
+        scale: float = 1.0,
+        quality: str = "hires"
+) -> AnnData:
     """\
     Read Old Spatial Transcriptomics data
 
@@ -334,9 +316,9 @@ def ReadOldST(
     """
 
     adata = stlearn.read.file_table(count_matrix_file)
-    adata=stlearn.add.parsing(adata,
-        coordinates_file = spatial_file)
-    stlearn.add.image(adata, library_id=library_id, quality=quality,imgpath=image_file, scale=scale)
+    adata = stlearn.add.parsing(adata,
+                                coordinates_file=spatial_file)
+    stlearn.add.image(adata, library_id=library_id, quality=quality, imgpath=image_file, scale=scale)
 
     adata.obs['sum_counts'] = np.array(adata.X.sum(axis=1))
 
@@ -345,7 +327,6 @@ def ReadOldST(
 
 from typing import Optional, Union
 from anndata import AnnData
-from PIL import Image
 from pathlib import Path
 
 # Test progress bar
@@ -355,13 +336,13 @@ import os
 
 
 def tiling(
-    adata: AnnData,
-    out_path: Union[Path, str] = "./tiling",
-    library_id: str = None,
-    crop_size: int = 40,
-    target_size: int = 299,
-    verbose: bool = False,
-    copy: bool = False,
+        adata: AnnData,
+        out_path: Union[Path, str] = "./tiling",
+        library_id: str = None,
+        crop_size: int = 40,
+        target_size: int = 299,
+        verbose: bool = False,
+        copy: bool = False,
 ) -> Optional[AnnData]:
     """\
     Tiling H&E images to small tiles based on spot spatial location
@@ -403,9 +384,9 @@ def tiling(
     tile_names = []
 
     with tqdm(
-        total=len(adata),
-        desc="Tiling image",
-        bar_format="{l_bar}{bar} [ time left: {remaining} ]",
+            total=len(adata),
+            desc="Tiling image",
+            bar_format="{l_bar}{bar} [ time left: {remaining} ]",
     ) as pbar:
         for imagerow, imagecol in zip(adata.obs["imagerow"], adata.obs["imagecol"]):
             imagerow_down = imagerow - crop_size / 2
@@ -415,7 +396,7 @@ def tiling(
             tile = img_pillow.crop(
                 (imagecol_left, imagerow_down, imagecol_right, imagerow_up)
             )
-            #tile.thumbnail((target_size, target_size), Image.ANTIALIAS)
+            # tile.thumbnail((target_size, target_size), Image.ANTIALIAS)
             tile = tile.resize((target_size, target_size))
             tile_name = library_id + "-" + str(imagecol) + "-" + str(imagerow) + "-" + str(crop_size)
             out_tile = Path(out_path) / (tile_name + ".jpeg")
@@ -439,21 +420,21 @@ from anndata import AnnData
 from PIL import Image
 from pathlib import Path
 
+
 def ensembl_to_id(
-    adata: AnnData,
-    ens_path: Union[Path, str] = "./ensembl.tsv",
-    library_id: str = None,
-    verbose: bool = False,
-    copy: bool = True,
+        adata: AnnData,
+        ens_path: Union[Path, str] = "./ensembl.tsv",
+        library_id: str = None,
+        verbose: bool = False,
+        copy: bool = True,
 ) -> Optional[AnnData]:
-    
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
     ens_df = pd.read_csv(ens_path, sep="\t")
     adata.var["mean_expression"] = np.mean(adata.X, axis=0)
     a = adata.var_names.intersection(ens_df["Ensembl ID(supplied by Ensembl)"])
     b = ens_df["Approved symbol"][ens_df["Ensembl ID(supplied by Ensembl)"].isin(a)]
-    var_dic = dict(zip(a,b))
-    adata = adata[:,a].copy()
+    var_dic = dict(zip(a, b))
+    adata = adata[:, a].copy()
     adata.var_names = adata.var_names.map(var_dic)
     return adata if copy else None

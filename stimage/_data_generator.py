@@ -1,9 +1,9 @@
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.resnet50 import preprocess_input as preprocess_resnet
 import numpy as np
-from .imgaug import seq_aug
+from tensorflow import keras
+from tensorflow.keras.applications.resnet50 import preprocess_input as preprocess_resnet
+from tensorflow.keras.preprocessing import image
+from ._imgaug import seq_aug
+
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -33,19 +33,17 @@ class DataGenerator(keras.utils.Sequence):
 
         return X_img, y
 
-
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(self.adata.n_obs)
-
 
     def _load_img(self, obs):
         img_path = self.adata.obs.loc[obs, 'tile_path']
         X_img = image.load_img(img_path, target_size=self.dim)
         X_img = image.img_to_array(X_img).astype('uint8')
-#         X_img = np.expand_dims(X_img, axis=0)
-#         n_rotate = np.random.randint(0, 4)
-#         X_img = np.rot90(X_img, k=n_rotate, axes=(1, 2))
+        #         X_img = np.expand_dims(X_img, axis=0)
+        #         n_rotate = np.random.randint(0, 4)
+        #         X_img = np.rot90(X_img, k=n_rotate, axes=(1, 2))
         if self.aug:
             X_img = seq_aug(image=X_img)
         X_img = preprocess_resnet(X_img)
@@ -53,8 +51,8 @@ class DataGenerator(keras.utils.Sequence):
 
     def _load_label(self, obs):
         batch_adata = self.adata[obs, self.genes].copy()
-        
+
         return tuple([batch_adata.to_df()[i].values for i in self.genes])
 
     def get_classes(self):
-        return self.adata.to_df().loc[:,self.genes]
+        return self.adata.to_df().loc[:, self.genes]
