@@ -423,15 +423,15 @@ from pathlib import Path
 
 def ensembl_to_id(
         adata: AnnData,
-        ens_path: Union[Path, str] = "./ensembl.tsv",
-        library_id: str = None,
+        ens_path: Union[Path, str] = None,
         verbose: bool = False,
         copy: bool = True,
 ) -> Optional[AnnData]:
-    if library_id is None:
-        library_id = list(adata.uns["spatial"].keys())[0]
+    if ens_path:
+        ens_path = ens_path
+    else:
+        ens_path = Path(__file__).parent.absolute() / "ensembl.tsv"
     ens_df = pd.read_csv(ens_path, sep="\t")
-    adata.var["mean_expression"] = np.mean(adata.X, axis=0)
     a = adata.var_names.intersection(ens_df["Ensembl ID(supplied by Ensembl)"])
     b = ens_df["Approved symbol"][ens_df["Ensembl ID(supplied by Ensembl)"].isin(a)]
     var_dic = dict(zip(a, b))
