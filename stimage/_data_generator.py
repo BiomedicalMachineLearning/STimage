@@ -46,7 +46,7 @@ class DataGenerator(keras.utils.Sequence):
         #         X_img = np.rot90(X_img, k=n_rotate, axes=(1, 2))
         if self.aug:
             X_img = seq_aug(image=X_img)
-        X_img = preprocess_resnet(X_img)
+#         X_img = preprocess_resnet(X_img)
         return X_img
 
     def _load_label(self, obs):
