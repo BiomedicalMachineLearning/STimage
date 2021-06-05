@@ -580,13 +580,16 @@ train_Y = Sample1.to_df()[Sample1.to_df().sum().sort_values(ascending=False).ind
 Model_LGBM = LGBM(train_X, train_Y)
 
 resnet_model = ResNet50(weights="imagenet", include_top=False, input_shape=(299, 299, 3), pooling="avg")
-gene_list = train_Y.columns
+gene_list = train_Y.columns.tolist()
     
-def combine_model_predict(tile):
-    feature = resnet_model.predict(tile)
-    feature = feature.reshape((10, 2048))
-    prediction = Model_LGBM.predict_proba(feature)
-    return prediction[i]
+def model_predict_gene(gene):
+    i = gene_list.index(gene)
+    def combine_model_predict(tile):
+        feature = resnet_model.predict(tile)
+        feature = feature.reshape((10, 2048))
+        prediction = Model_LGBM.predict_proba(feature)
+        return prediction[i]
+    return combine_model_predict
 
 def pred_label(tile):
     feature = resnet_model.predict(tile)
@@ -628,13 +631,14 @@ def pred_label(tile):
     prediction = Model_LGBM.predict_proba(feature)
     return prediction
 
-i = gene_list.get_loc(input('Enter Gene Name :'))
+gene = "COX6C"
+#i = gene_list.get_loc(input('Enter Gene Name :'))
 images = transform_img_fn([os.path.join('D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/tiles/block2/block2-7831-11564-299.jpeg')])
 explainer = lime_image.LimeImageExplainer()
-explanation = explainer.explain_instance(images[0].astype('double'), combine_model_predict, segmentation_fn= None, top_labels=3, num_samples=100)
+explanation = explainer.explain_instance(images[0].astype('double'), model_predict_gene(gene), segmentation_fn= None, top_labels=3, num_samples=100)
 dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
 heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
-plt.imshow(heatmap, cmap = 'RdBu', vmin  = -heatmap.max(), vmax = heatmap.max())
+plt.imshow(heatmap, cmap = 'RdBu', vmin  = -1, vmax = 1)
 plt.colorbar()
 print(pred_label(images))
 #%%%
