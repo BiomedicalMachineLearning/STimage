@@ -642,3 +642,120 @@ plt.imshow(heatmap, cmap = 'RdBu', vmin  = -1, vmax = 1)
 plt.colorbar()
 print(pred_label(images))
 #%%%
+import joblib
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import pysal
+from pysal.explore import esda
+import pysal.lib as lps
+from esda.moran import Moran, Moran_Local, Moran_BV, Moran_Local_BV
+import splot
+from splot.esda import moran_scatterplot, plot_moran, lisa_cluster, plot_moran_bv_simulation, plot_moran_bv, plot_local_autocorrelation
+from libpysal.weights.contiguity import Queen
+from libpysal import examples
+import numpy as np
+import os
+
+
+def Spatial_AutoCorr(Sample1, Sample2, Model, test_X, gene, wd):
+    Sample2.obsm["gpd"] = gpd.GeoDataFrame(Sample2.obs,
+                                                 geometry=gpd.points_from_xy(
+                                                     Sample2.obs.imagecol, 
+                                                     Sample2.obs.imagerow))
+
+    test_Y = Sample2.to_df()[Sample1.to_df().sum().sort_values(ascending=False).index[:500]] 
+    Y = Sample1.to_df()[Sample1.to_df().sum().sort_values(ascending=False).index[:500]] 
+    gene_list = Y.columns.tolist()
+
+    Y=Y.iloc[:,:200]
+    MinMax_scaler_y = preprocessing.MinMaxScaler(feature_range =(0, 1))
+    Y = MinMax_scaler_y.fit_transform(Y) 
+    Y = pd.DataFrame(data=Y)
+    Y=Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
+
+    test_Y=test_Y.iloc[:,:200]
+    test_Y=MinMax_scaler_y.transform(test_Y)
+    test_Y=pd.DataFrame(data=test_Y)
+    test_Y=test_Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
+
+    w = Queen.from_dataframe(Sample2.obsm["gpd"])
+
+    y = Model.predict(test_X)
+    i = gene_list.index(gene)+1
+    y = pd.DataFrame(y[:,:i])
+
+    x = test_Y[[0]].values
+    Sample2.obsm["gpd"]["gc_{}".format(gene)] = x
+    Sample2.obsm["gpd"]["pred_{}".format(gene)] = y.values
+    tissue_image = Sample2.uns["spatial"]["block2"]["images"]["fulres"]
+    
+    
+    moran = Moran(y,w)
+    moran_bv = Moran_BV(y, x, w)
+    moran_loc = Moran_Local(y, w)
+    moran_loc_bv = Moran_Local_BV(y, x, w)
+
+    fig, ax = plt.subplots(figsize=(5,5))
+    moran_plot = moran_scatterplot(moran_bv, ax=ax)
+    ax.set_xlabel('prediction of gene {}'.format(gene))
+    ax.set_ylabel('Spatial lag of ground truth of gene {}'.format(gene))
+    plt.tight_layout()
+    plt.show()
+
+
+    def plot_choropleth(gdf, 
+                        attribute_1,
+                        attribute_2,
+                        bg_img,
+                        alpha=0.5,
+                        scheme='Quantiles', 
+                        cmap='YlGnBu', 
+                        legend=True):
+
+        fig, axs = plt.subplots(2,1, figsize=(5, 8),
+                                subplot_kw={'adjustable':'datalim'})
+
+        # Choropleth for attribute_1
+        gdf.plot(column=attribute_1, scheme=scheme, cmap=cmap,
+                 legend=legend, legend_kwds={'loc': 'upper left',
+                                             'bbox_to_anchor': (0.92, 0.8)},
+                 ax=axs[0], alpha=alpha, markersize=2)
+
+        axs[0].imshow(bg_img)
+        axs[0].set_title('choropleth plot for {}'.format(attribute_1), y=0.8)
+        axs[0].set_axis_off()
+
+        # Choropleth for attribute_2
+        gdf.plot(column=attribute_2, scheme=scheme, cmap=cmap,
+                 legend=legend, legend_kwds={'loc': 'upper left',
+                                             'bbox_to_anchor': (0.92, 0.8)},
+                 ax=axs[1], alpha=alpha, markersize=2)
+
+        axs[1].imshow(bg_img)
+        axs[1].set_title('choropleth plot for {}'.format(attribute_2), y=0.8)
+        axs[1].set_axis_off()
+
+        plt.tight_layout()
+
+        return fig, ax
+
+    choropleth_plot = plot_choropleth(Sample2.obsm["gpd"], "gc_{}".format(gene),"pred_{}".format(gene),tissue_image)
+    plt.show()
+
+    lisa_cluster(moran_loc_bv, Sample2.obsm["gpd"], p=0.05, 
+                 figsize = (9,9), markersize=12, **{"alpha":0.8})
+    lisa_plot = plt.imshow(Sample2.uns["spatial"]["block2"]["images"]["fulres"])
+    plt.show()
+    return moran_plot, choropleth_plot, lisa_plot
+
+
+
+gene = "COX6C"
+Sample1 = Sample1
+Sample2 = Sample2
+wd = 'D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/'
+test_X = Sample2.obsm["Resnet50_Test_Features"]#pd.read_csv(wd+"Resnet_unnorm_test.csv").iloc[:,1:] 
+Model = joblib.load(wd+"ResNet50-LGBM_200_unnorm_updated.pkl")
+
+a,b,c = Spatial_AutoCorr(Sample1, Sample2, Model, test_X, gene, wd)
