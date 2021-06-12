@@ -1,8 +1,7 @@
 #%%
 import streamlit as st; import pandas as pd; import numpy as np
 import pickle; 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.multioutput import MultiOutputClassifier
+from sklearn.ensemble import RandomForestClassifier; from sklearn.multioutput import MultiOutputClassifier
 import lightgbm as lgb; import skimage
 from skimage.color import rgb2hed; import seaborn as sns
 from skimage.feature import peak_local_max; from skimage.segmentation import watershed; from skimage.measure import label
@@ -12,13 +11,12 @@ from scipy import ndimage as ndi
 from skimage.morphology import area_opening
 import math
 import streamlit.components.v1 as components
-from sklearn.preprocessing import LabelEncoder; from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder; 
 from sklearn import preprocessing; from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics import roc_auc_score; from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder; from sklearn.model_selection import train_test_split
 from sklearn import preprocessing; from sklearn.linear_model import LogisticRegression
 import shap; import numpy as np; shap.initjs()
-import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 import joblib
 import plotly.express as px
@@ -29,15 +27,12 @@ import os; import sys; import pandas as pd; import numpy as np; from numpy impor
 import lime
 from tensorflow import keras
 import lime.lime_tabular
-from sklearn.preprocessing import LabelEncoder; from sklearn.model_selection import train_test_split
-from sklearn import preprocessing; from sklearn.linear_model import LogisticRegression
 from keras.applications.imagenet_utils import decode_predictions
 from keras.utils import to_categorical; from sklearn.preprocessing import LabelEncoder; from sklearn.preprocessing import OneHotEncoder; from sklearn.model_selection import train_test_split
 import stlearn
 stlearn.settings.set_figure_params(dpi=300)
 from pathlib import Path
 import pandas as pd
-import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import Optional, Union
 from anndata import AnnData
@@ -73,40 +68,34 @@ from keras.preprocessing.image import img_to_array
 from keras.layers import Dense, Conv2D, MaxPooling2D
 from keras.layers import Dropout, Flatten, GlobalAveragePooling2D
 import warnings; from tensorflow.keras.preprocessing import image as image_fun
-import tensorflow as tf
+import tensorflow as tf; import copy
 #%%
 BASE_PATH = Path("D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files")
-TILE_PATH = BASE_PATH / "tiles"
-TILE_PATH.mkdir(parents=True, exist_ok=True)
+SAMPLE = ['block1', 'block2']
+count_file = ['V1_Breast_Cancer_Block_A_Section_1_filtered_feature_bc_matrix.h5','V1_Breast_Cancer_Block_A_Section_2_filtered_feature_bc_matrix.h5']
+main_image = ["V1_Breast_Cancer_Block_A_Section_1_image.tif", "V1_Breast_Cancer_Block_A_Section_2_image.tif"]
+AnnData = []
+for i in range(0,len(SAMPLE)):
+    Samples = stlearn.Read10X(BASE_PATH / SAMPLE[i], 
+                      library_id=SAMPLE[i], 
+                      count_file=count_file[i],
+                      quality="fulres",)
+    img = plt.imread(BASE_PATH / SAMPLE[i] /main_image[i], 0)
+    Samples.uns["spatial"][SAMPLE[i]]['images']["fulres"] = img
+    AnnData.append(Samples)
 
+Sample1_un_norm, Sample2_un_norm = copy.copy(AnnData[0]), copy.copy(AnnData[1])
 
-SAMPLE = "block1"
-Sample1 = stlearn.Read10X(BASE_PATH / SAMPLE, 
-                  library_id=SAMPLE, 
-                  count_file="V1_Breast_Cancer_Block_A_Section_1_filtered_feature_bc_matrix.h5",
-                  quality="fulres",)
-img = plt.imread(BASE_PATH / SAMPLE /"V1_Breast_Cancer_Block_A_Section_1_image.tif", 0)
-Sample1.uns["spatial"][SAMPLE]['images']["fulres"] = img
-
-
-SAMPLE = "block2"
-Sample2 = stlearn.Read10X(BASE_PATH / SAMPLE, 
-                  library_id=SAMPLE, 
-                  count_file="V1_Breast_Cancer_Block_A_Section_2_filtered_feature_bc_matrix.h5",
-                  quality="fulres",)
-                  #source_image_path=BASE_PATH / SAMPLE /"V1_Breast_Cancer_Block_A_Section_1_image.tif")
-img = plt.imread(BASE_PATH / SAMPLE /"V1_Breast_Cancer_Block_A_Section_2_image.tif", 0)
-Sample2.uns["spatial"][SAMPLE]['images']["fulres"] = img
-
-
-for adata in [Sample1,Sample2,]:
-
-    stlearn.pp.normalize_total(adata)
-
+for i in range(0,len(AnnData)):
+    stlearn.pp.normalize_total(AnnData[i])
 #%%
 #ResNet-50 Features
 #Cancer-vs-Non_Cancer Spots 
 wd = "D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/"
+Cluster_train = pd.read_csv(wd+'Cluster_train.csv').iloc[:,1:]
+Cluster_test = pd.read_csv(wd+'Cluster_test.csv').iloc[:,1:]
+Model_LGBM = joblib.load(wd+'ResNet50-LGBM_200_unnorm_updated.pkl')
+model_weights = wd+'CNN_NB_8genes_model.h5'
 #%%
 #st.set_page_config(layout="wide")
 icon = Image.open(wd+'Logo.png')
@@ -233,11 +222,12 @@ if rad =="Cancer vs Non-Cancer Prediction from Biomarker Expression":
                             verbose=True, mode='classification')
         return explainer
     
+    biomarker_list = ['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']
     
-    Biomarkers_train = Sample1.to_df()[['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']]
-    Cluster_train = pd.read_csv(wd+'Cluster_train.csv').iloc[:,1:]#Sample1.obs["Cluster"]
-    Biomarkers_test = Sample2.to_df()[['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']]
-    Cluster_test = pd.read_csv(wd+'Cluster_test.csv').iloc[:,1:]#Sample2.obs["Cluster"]
+    Biomarkers_train = AnnData[0].to_df()[biomarker_list]
+    #Sample1.obs["Cluster"]
+    Biomarkers_test = AnnData[1].to_df()[biomarker_list]
+    #Sample2.obs["Cluster"]
     tree_model = lgb.LGBMClassifier()
     
     Cancer_vs_Non_Cancer_clf = joblib.load(wd+'Cancer_vs_Non-Cancer_clf.pkl')
@@ -268,26 +258,6 @@ if rad =="Cancer vs Non-Cancer Prediction from Biomarker Expression":
     html = exp.as_html()
     components.html(html, height=800)
     
-    Biomarker_Identicals_clf = joblib.load(wd+'Biomarker_identicals.pkl')
-    Top_500genes_train = Sample1.to_df()[Sample1.to_df().sum().sort_values(ascending=False).index[:500]]
-    Top_500genes_test = Sample2.to_df()[Sample2.to_df().sum().sort_values(ascending=False).index[:500]]
-    input_df = user_input_features()
-    df = pd.concat([input_df,Top_500genes_train],axis=0)
-    df = df[:1]
-    prediction = Biomarker_Identicals_clf.predict(df)
-    st.header("""Classification Output : Tumor(1) or Non-Tumor Spot(0)""")
-    if prediction ==1:
-        st.subheader("The selected combination of gene expression values represent Cancer Spot")
-        st.info(""" Prediction: 1""")
-    else:
-        st.subheader("The selected combination of gene expression values represent Non-Cancer Spot")
-        st.info(""" Prediction: 0""")
-    with st.spinner('Generating explanations for Genes Identical to Biomarkers'):
-
-        explainer = shap.TreeExplainer(Biomarker_Identicals_clf, Top_500genes_train)
-        shap_values = explainer.shap_values(Top_500genes_test)
-        shap.summary_plot(shap_values, Top_500genes_test, max_display=20)
-        st.pyplot(bbox_inches='tight')
 #%%
 if rad =="AUROC-Curve":
     Bar_Chart = pd.read_csv(wd+'Saved_AUROC.csv')
@@ -308,23 +278,16 @@ if rad =="AUROC-Curve":
 #%%
 
 resnet_model = ResNet50(weights="imagenet", include_top=False, input_shape=(299, 299, 3), pooling="avg")
-Top_500genes_train = Sample1.to_df()[Sample1.to_df().sum().sort_values(ascending=False).index[:500]]
+Top_500genes_train = Sample1_un_norm.to_df()[Sample1_un_norm.to_df().sum().sort_values(ascending=False).index[:500]]
 
 if rad =="LIME Plots for Gene Expression Classification":
     
-    """def combine_model_predict(tile):
-        feature = resnet_model.predict(tile)
-        feature = feature.reshape((10, 2048))
-        Model_LGBM = joblib.load(wd+'ResNet50-LGBM_200.pkl')
-        prediction = Model_LGBM.predict_proba(feature)
-        return prediction[i]"""
     
     def model_predict_gene(gene):
         i = gene_list.index(gene)
         def combine_model_predict(tile):
             feature = resnet_model.predict(tile)
             feature = feature.reshape((10, 2048))
-            Model_LGBM = joblib.load(wd+'ResNet50-LGBM_200_unnorm_updated.pkl')
             prediction = Model_LGBM.predict_proba(feature)
             return prediction[i]
         return combine_model_predict
@@ -354,6 +317,12 @@ if rad =="LIME Plots for Gene Expression Classification":
         im_nuclei_seg_mask = area_opening(labels, area_threshold=80).astype(np.int)
         return im_nuclei_seg_mask
     
+    
+    """Non_Cancer = Sample2_un_norm.obs[Sample2_un_norm.obs["Cluster"]==0].iloc[:10,:]
+    Cancer = Sample2_un_norm.obs[Sample2_un_norm.obs["Cluster"]==1].iloc[:10,:]
+    Non_Cancer_images = Non_Cancer["tile_path"].tolist()
+    Cancer_images = Cancer["tile_path"].to_list()"""
+    
     str3 = " "
     image_list = sorted(glob.glob(wd+"tiles/block1/*jpeg"))
     value = st.multiselect("Spot", image_list, default=image_list[72:73])
@@ -363,8 +332,8 @@ if rad =="LIME Plots for Gene Expression Classification":
     
     gene_list = Top_500genes_train.columns.tolist()
     user_input = st.text_input("Enter Gene Name:", 'COX6C')
-   
-    
+       
+
     Image_tile = Image.open(im)
     st.image(Image_tile)
     col1, col2, col3 = st.beta_columns(3)
@@ -373,37 +342,34 @@ if rad =="LIME Plots for Gene Expression Classification":
                 #### Quickshift Segmentation for LIME
              """)
     
+            
+    images = transform_img_fn(im)
+    explainer = lime_image.LimeImageExplainer()
+    explanation_quick = explainer.explain_instance(images[0].astype('double'), 
+                                         model_predict_gene(user_input), 
+                                         top_labels=3, num_samples=100,
+                                         segmentation_fn=None)
+    explanation_watershed = explainer.explain_instance(images[0].astype('double'), 
+                                 model_predict_gene(user_input), 
+                                 top_labels=3, num_samples=100,
+                                 segmentation_fn=watershed_segment)
+    
     with col1:
-        
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
-        plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
+        plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu',vmin  = -heatmap.max(), vmax = heatmap.max())
         st.write(fig)
         plt.colorbar()
         plt.show()
         
     with col2:
-        
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[1]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[1]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy())#.astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -413,16 +379,8 @@ if rad =="LIME Plots for Gene Expression Classification":
         
     with col3:
         
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[2]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[2]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy())#.astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -438,16 +396,8 @@ if rad =="LIME Plots for Gene Expression Classification":
 
     with col7:
         
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -457,16 +407,8 @@ if rad =="LIME Plots for Gene Expression Classification":
         
     with col8:
         
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[1]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[1]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -476,16 +418,8 @@ if rad =="LIME Plots for Gene Expression Classification":
         
     with col9:
         
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[2]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[2]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -499,18 +433,11 @@ if rad =="LIME Plots for Gene Expression Classification":
         
     user_input_2 = st.text_input("Enter Gene Name:", 'ARF1')
     col4, col5, col6 = st.beta_columns(3)
+    
     with col4:
         
-        #j = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -519,17 +446,9 @@ if rad =="LIME Plots for Gene Expression Classification":
         plt.show()
         
     with col5:
-        
-        #i = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[1]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[1]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -539,16 +458,8 @@ if rad =="LIME Plots for Gene Expression Classification":
 
     with col6:
         
-        #i = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[2]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[2]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -564,16 +475,8 @@ if rad =="LIME Plots for Gene Expression Classification":
     
     with col10:
         
-        #i = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -582,17 +485,9 @@ if rad =="LIME Plots for Gene Expression Classification":
         plt.show()
         
     with col11:
-        
-        #i = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[1]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[1]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -601,17 +496,9 @@ if rad =="LIME Plots for Gene Expression Classification":
         plt.show()
         
     with col12:
-        
-        #i = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[2]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[2]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -712,17 +599,15 @@ if rad =="LIME Plots for Gene Expression Prediction":
 
         return model
     
-    #n_genes = len(gene_list)
-    
+    model = CNN_NB_multiple_genes((299, 299, 3), 8)
+    model.load_weights(model_weights)
+    model.compile(loss=negative_binomial_loss,
+                  optimizer=tf.keras.optimizers.Adam(0.0001))
     
     def model_predict_gene(gene):
         i = gene_list.index(gene)
         from scipy.stats import nbinom
         def model_predict(x):
-            model = CNN_NB_multiple_genes((299, 299, 3), 8)
-            model.load_weights(wd+'CNN_NB_8genes_model.h5')
-            model.compile(loss=negative_binomial_loss,
-                      optimizer=tf.keras.optimizers.Adam(0.0001))
             test_predictions = model.predict(x)
             n = test_predictions[i][:, 0]
             p = test_predictions[i][:, 1]
@@ -765,6 +650,7 @@ if rad =="LIME Plots for Gene Expression Prediction":
     gene_list = Top_500genes_train.columns.tolist()
     user_input = st.text_input("Enter Gene Name:", 'COX6C')
        
+
     
     Image_tile = Image.open(im)
     st.image(Image_tile)
@@ -775,18 +661,21 @@ if rad =="LIME Plots for Gene Expression Prediction":
          """)
     
         
+    images = transform_img_fn(im)
+    explainer = lime_image.LimeImageExplainer()
+    explanation_quick = explainer.explain_instance(images[0].astype('double'), 
+                                         model_predict_gene(user_input), 
+                                         top_labels=3, num_samples=100,
+                                         segmentation_fn=None)
+    explanation_watershed = explainer.explain_instance(images[0].astype('double'), 
+                                 model_predict_gene(user_input), 
+                                 top_labels=3, num_samples=100,
+                                 segmentation_fn=watershed_segment)
+        
     with col2:
-        
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy())#.astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -804,17 +693,9 @@ if rad =="LIME Plots for Gene Expression Prediction":
 
         
     with col8:
-        
-        #i = gene_list.get_loc(user_input)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -831,19 +712,10 @@ if rad =="LIME Plots for Gene Expression Prediction":
          """)
          
          
-        
     with col5:
         
-        #i = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=None)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+        dict_heatmap = dict(explanation_quick.local_exp[explanation_quick.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_quick.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
@@ -861,17 +733,9 @@ if rad =="LIME Plots for Gene Expression Prediction":
     
         
     with col11:
-        
-        #i = gene_list.get_loc(user_input_2)
-        images = transform_img_fn(im)
-        
-        explainer = lime_image.LimeImageExplainer()
-        explanation = explainer.explain_instance(images[0].astype('double'), 
-                                                 model_predict_gene(user_input_2), 
-                                                 top_labels=3, num_samples=100,
-                                                 segmentation_fn=watershed_segment)
-        dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
-        heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
+
+        dict_heatmap = dict(explanation_watershed.local_exp[explanation_watershed.top_labels[0]])
+        heatmap = np.vectorize(dict_heatmap.get)(explanation_watershed.segments) 
         fig, ax = plt.subplots()
         plt.imshow(Image.open(im))#.numpy().astype(int))
         plt.imshow(heatmap, alpha = 0.45, cmap = 'RdBu', vmin  = -1, vmax = 1)
