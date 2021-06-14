@@ -1,99 +1,17 @@
 #%%
-#Import Data and define Tiling Function
-
-
-import stlearn as st
-st.settings.set_figure_params(dpi=200)
-from pathlib import Path
-import pandas as pd
-import matplotlib.pyplot as plt
-import sys
-from pathlib import Path
-from typing import Optional, Union
-from anndata import AnnData
-import pandas as pd
-import stlearn
-from typing import Optional, Union
-from anndata import AnnData
-from pathlib import Path
-from PIL import Image
-from tqdm import tqdm
-import seaborn as sns
-import numpy as np
-import os
-from sklearn.multioutput import MultiOutputClassifier
-import pandas as pd
-import lightgbm as lgb
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
-from sklearn.preprocessing import LabelBinarizer
-import os
-from keras.applications.imagenet_utils import decode_predictions
-from keras.preprocessing import image
-from sklearn.metrics import roc_auc_score
-from skimage.color import rgb2hed
-import pandas as pd
-from keras.utils import to_categorical
-from numpy import array
-from numpy import argmax
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import OneHotEncoder
-import sys
-from numpy import load
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
-from keras import backend
-from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Dropout, BatchNormalization
-from keras.optimizers import SGD, Adam
-from keras.models import Model
-from tensorflow.keras import regularizers
-from keras.applications.resnet50 import ResNet50, preprocess_input
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
-import lime
-from sklearn.preprocessing import MinMaxScaler
-from lime import lime_image
-from skimage.segmentation import mark_boundaries
-from skimage.segmentation import watershed
-import glob
-import os
-from tensorflow.keras.preprocessing import image as image_fun
-from sklearn.preprocessing import OneHotEncoder
-import skimage
-from skimage.color import rgb2hed
-from skimage.feature import peak_local_max
-from skimage.segmentation import watershed
-from skimage.measure import label
-import scipy as sp
-from scipy import ndimage as ndi
-from skimage.morphology import area_opening
-import math; import copy
-
-#%%
 #To save AnnData before Normalization
-Sample1_un_norm, Sample2_un_norm = copy.copy(Sample1), copy.copy(Sample2)
+#copy the AnnData fro Train and Test
 
-#%%
+#%%Save in preprocessing.py
 #ResNet50 Features saved in obsm
-import os; import pandas as pd; import numpy as np
-import PIL; from PIL import Image
-PIL.Image.MAX_IMAGE_PIXELS = 933120000
-import os; import glob
-from PIL import Image; import matplotlib.pyplot as plt; 
-from keras.utils import np_utils
-from keras.models import Sequential
-from keras.applications import VGG16, ResNet50, inception_v3, DenseNet121
-from keras.applications import imagenet_utils
-from keras.callbacks import ModelCheckpoint
-from keras.preprocessing.image import load_img
-from keras.preprocessing.image import img_to_array
-from keras.layers import Dense, Conv2D, MaxPooling2D
-from keras.layers import Dropout, Flatten, GlobalAveragePooling2D
-import warnings
+
+import os; import pandas as pd; import numpy as np; import glob; import warnings
+import PIL; from PIL import Image; PIL.Image.MAX_IMAGE_PIXELS = 933120000
+import matplotlib.pyplot as plt; 
+from keras.utils import np_utils; from keras.models import Sequential
+from keras.applications import VGG16, ResNet50, inception_v3, DenseNet121, imagenet_utils
+from keras.callbacks import ModelCheckpoint; from keras.preprocessing.image import load_img, img_to_array
+from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Flatten, GlobalAveragePooling2D
 
 wd = "D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files"
 def ResNet50_features_train(train, pre_model):
@@ -109,8 +27,8 @@ def ResNet50_features_train(train, pre_model):
     features_train = pre_model.predict(x_train, batch_size=32)
     features_flatten_train = features_train.reshape((features_train.shape[0], 2048))
     features_flatten_train = pd.DataFrame(features_flatten_train)
-    features_flatten_train.index = Sample1.obsm.to_df().index
-    Sample1.obsm["Resnet50_Train_Features"] = features_flatten_train
+    features_flatten_train.index = train_adata.obsm.to_df().index
+    train_adata.obsm["Resnet50_Train_Features"] = features_flatten_train
 
 def ResNet50_features_test(test, pre_model):
     
@@ -125,169 +43,80 @@ def ResNet50_features_test(test, pre_model):
     features_test = pre_model.predict(x_test, batch_size=32)
     features_flatten_test = features_test.reshape((features_test.shape[0], 2048))
     features_flatten_test = pd.DataFrame(features_flatten_test)
-    features_flatten_test.index = Sample2.obsm.to_df().index
-    Sample2.obsm["Resnet50_Test_Features"] = features_flatten_test
+    features_flatten_test.index = test_adata.obsm.to_df().index
+    test_adata.obsm["Resnet50_Test_Features"] = features_flatten_test
     
-train = Sample1.obs["tile_path"]
-test = Sample2.obs["tile_path"]
+train = train_adata.obs["tile_path"]
+test = test_adata.obs["tile_path"]
 model = ResNet50(weights="imagenet", include_top=False, input_shape=(299,299, 3), pooling="avg")
 ResNet50_features_train(train, model)
 ResNet50_features_test(test, model)
-#%%
-#Clusters for Image Tiles save in Sample.obs
 
 
-from keras.preprocessing.image import load_img
-from keras.preprocessing.image import img_to_array
-from numpy import asarray
-from os import listdir
-import pandas as pd
-import numpy as np
+
+#%% Save in Preprocessing.py
+#Train and Test Set Cancer vs Non-Cancer spot Labelling done by Clustering; Clusters for Image Tiles save in Sample.obs
+
+from keras.preprocessing.image import load_img, img_to_array
+import numpy as np; from numpy import asarray
+import pandas as pd; from os import listdir
 from sklearn.cluster import AgglomerativeClustering
 
-
-def Clusters(Sample1_tiles, Sample1, Sample2_tiles, Sample2, model):
+def Clusters(train_tiles, train_adata, test_tiles, test_adata, model):
     
-    Sample1_to_df = Sample1.to_df().reset_index(drop=True)
-    Sample1_to_df.drop([col for col, val in Sample1_to_df.sum().iteritems() if val < 20000], axis=1, inplace=True)
+    train_to_df = train_adata.to_df().reset_index(drop=True)
+    train_to_df.drop([col for col, val in train_to_df.sum().iteritems() if val < 20000], axis=1, inplace=True)
 
-    Sample2_to_df = Sample2.to_df().reset_index(drop=True)
-    Sample2_to_df.drop([col for col, val in Sample2_to_df.sum().iteritems() if val < 20000], axis=1, inplace=True)
+    test_to_df = test_adata.to_df().reset_index(drop=True)
+    test_to_df.drop([col for col, val in test_to_df.sum().iteritems() if val < 20000], axis=1, inplace=True)
     
-    photos_Sample1, photos_Sample2 =list(), list()
-    for filename in Sample1_tiles:
-            # load image
+    photos_train, photos_test =list(), list()
+    for filename in train_tiles:
             photo = load_img(filename, target_size=(140,140))
-            # convert to numpy array
             photo = img_to_array(photo, dtype='uint8')
-            # store
-            photos_Sample1.append(photo)
+            photos_train.append(photo)
     
-    Img_Sample1 = asarray(photos_Sample1, dtype='uint8')
-    Img_Sample1 = pd.DataFrame(Img_Sample1.reshape(Img_Sample1.shape[0],58800))
-    result_Sample1 = pd.concat([Img_Sample1, Sample1_to_df], axis=1)
-    y_hc_Sample1 = pd.DataFrame(index = Sample1.obs.index)
-    y_hc_Sample1["Cluster"] = model.fit_predict(result_Sample1)
-    Sample1.obs["Cluster"] = y_hc_Sample1["Cluster"]
-    #y_hc_Sample1["Cluster"].to_csv('C:/Users/Onkar/Cluster_train.csv')
+    Img_train = asarray(photos_train, dtype='uint8')
+    Img_train = pd.DataFrame(Img_train.reshape(Img_train.shape[0],58800))
+    result_train = pd.concat([Img_train, train_to_df], axis=1)
+    y_hc_train = pd.DataFrame(index = train_adata.obs.index)
+    y_hc_train["Cluster"] = model.fit_predict(result_train)
+    train_adata.obs["Cluster"] = y_hc_train["Cluster"]
 
-    for filename in Sample2_tiles:
-            # load image
-            photo = load_img(
-                filename, target_size=(140,140))
-            # convert to numpy array
+    for filename in test_tiles:
+            photo = load_img(filename, target_size=(140,140))
             photo = img_to_array(photo, dtype='uint8')
-            # store
-            photos_Sample2.append(photo)
+            photos_test.append(photo)
 
-    Img_Sample2 = asarray(photos_Sample2, dtype='uint8')
-    Img_Sample2 =  pd.DataFrame(Img_Sample2.reshape(Img_Sample2.shape[0],58800))
-    result_Sample2 =  pd.concat([Img_Sample2, Sample2_to_df], axis=1)
-    y_hc_Sample2 = pd.DataFrame(index = Sample2.obs.index)
-    y_hc_Sample2["Cluster"] = model.fit_predict(result_Sample2)
-    Sample2.obs["Cluster"] = y_hc_Sample2["Cluster"]
-    #y_hc_Sample2["Cluster"].to_csv('C:/Users/Onkar/Cluster_test.csv')
+    Img_test = asarray(photos_test, dtype='uint8')
+    Img_test =  pd.DataFrame(Img_test.reshape(Img_test.shape[0],58800))
+    result_test =  pd.concat([Img_test, test_to_df], axis=1)
+    y_hc_test = pd.DataFrame(index = test_adata.obs.index)
+    y_hc_test["Cluster"] = model.fit_predict(result_test)
+    test_adata.obs["Cluster"] = y_hc_test["Cluster"]
     
 model = AgglomerativeClustering(n_clusters = 2, affinity = 'euclidean', linkage = 'ward')
-Sample1_tiles = Sample1.obs["tile_path"]
-Sample1 = Sample1
-Sample2_tiles = Sample2.obs["tile_path"]
-Sample2 = Sample2
+train_tiles = train_adata.obs["tile_path"]
+test_tiles = test_adata.obs["tile_path"]
+train_adata = train_adata
+test_adata = test_adata
 
-Clusters(Sample1_tiles, Sample1, Sample2_tiles, Sample2, model)
-
-
-#%%
-#Visualise Clusters
-import cv2
-
-wd = 'D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/'
-def Visualise(image, Sample1):
-    
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) 
-    Spot_vals0=Sample1.obs[Sample1.obs['Cluster'] == 0]
-    Spot_vals0=Spot_vals0.values
-    Spot_vals1=Sample1.obs[Sample1.obs['Cluster'] == 1]
-    Spot_vals1=Spot_vals1.values
-
-    x = Spot_vals0[:,4].astype('int64')
-    y = Spot_vals0[:,5].astype('int64')
-    box = (x,y)
-    numpy_array = np.array(box)
-    transpose = numpy_array.T
-    box = transpose.tolist()
-    
-    x1 = Spot_vals1[:,4].astype('int64')
-    y1 = Spot_vals1[:,5].astype('int64')
-    box1 = (x1,y1)
-    numpy_array1 = np.array(box1)
-    transpose1 = numpy_array1.T
-    box1 = transpose1.tolist()
-
-    for i in range(0,len(box)):
-        image=cv2.circle(image, tuple(box[i]), 50,(255,0,0), -1)
-    for i in range(0,len(box1)):
-        image=cv2.circle(image, tuple(box1[i]), 50,(0,255,0), -1)
-    cv2.imwrite(wd+"Cancer_vs_Non-Cancer_New_trial_train.png",image)
-
-image = cv2.imread(wd+"tiles/block1/V1_Breast_Cancer_Block_A_Section_1_image.tif") 
-Sample1 = Sample1
-Visualise(image, Sample1)
-#%%
-#UMAP Features for Cancer and Non-Cancer Image Tiles' ResNet50 Features
+Clusters(train_tiles, train_adata, test_tiles, test_tiles, model)
 
 
-import pandas as pd
-import datashader as ds
-import datashader.transfer_functions as tf
-import datashader.bundling as bd
-import matplotlib.pyplot as plt
-import colorcet
-import matplotlib.colors
-import matplotlib.cm
-import bokeh.plotting as bpl
-import bokeh.transform as btr
-import holoviews as hv
-import holoviews.operation.datashader as hd
-import umap.plot
 
-def Umap_points(resnet_features, label):
-    
-    mapper = umap.UMAP().fit(resnet_features)
-    return umap.plot.points(mapper, labels=label, theme='fire', background='black')
-
-resnet_features =Sample1.obsm["Resnet50_Train_Features"].values
-label = Sample1.obs["Cluster"].values
-Umap_points(resnet_features, label)
-
-
-#%%
+#%% Save in Training.py
 #Cancer vs Non-Cancer Prediction from Biomarkers Expression
 
+import pandas as pd; import numpy as np
+import lightgbm as lgb; import joblib
+from sklearn.preprocessing import LabelEncoder; from sklearn.model_selection import train_test_split
+from sklearn import preprocessing; from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, recall_score, precision_score, accuracy_score, f1_score
+from sklearn.metrics import roc_curve, roc_auc_score, classification_report, roc_auc_score
+from sklearn.preprocessing import LabelBinarizer; from sklearn.model_selection import train_test_split
+import shap; import lime; import lime.lime_tabular
 
-import pandas as pd
-import lightgbm as lgb
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import recall_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import f1_score
-from sklearn.metrics import roc_curve
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import classification_report
-from sklearn.metrics import roc_auc_score
-from sklearn.preprocessing import LabelBinarizer
-import shap
-import numpy as np
-import lime
-import lime.lime_tabular
-import joblib
-
-wd = "D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/"
 
 def multiclass_roc_auc_score(truth, pred, average="macro"):
     lb = LabelBinarizer()
@@ -299,8 +128,9 @@ def multiclass_roc_auc_score(truth, pred, average="macro"):
 def Can_pred_Biomarker(Biomarkers_train, Cluster_train, Biomarkers_test, tree_model):
     X_train, X_test, y_train, y_test = train_test_split(Biomarkers_train, Cluster_train, test_size = 0.15, random_state = 0, stratify=Cluster_train)
     clf = tree_model
-    clf.fit(X_train, y_train)
-    return clf, clf.predict(Biomarkers_test), joblib.dump(clf, wd+'Cancer_vs_Non-Cancer_clf.pkl')
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size = 0.15, random_state = 0)
+    clf = MultiOutputClassifier(model).fit(X_train, y_train)
+    return clf, clf.predict(Biomarkers_test), joblib.dump(OUTPATH/'Cancer_vs_Non-Cancer_clf.pkl')
 
 def Shapley_plot(Biomarkers_train, Biomarkers_test, clf):
     shap.initjs()
@@ -316,12 +146,11 @@ def Lime_plot(Biomarkers_train):
                         verbose=True, mode='classification')
     return explainer
 
-
-    
-Biomarkers_train = Sample1.to_df()[['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']]
-Cluster_train = Sample1.obs["Cluster"] #pd.read_csv('C:/Users/Onkar/Cluster_train.csv').iloc[:,1:] #
-Biomarkers_test = Sample2.to_df()[['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']]
-Cluster_test = Sample2.obs["Cluster"] #pd.read_csv('C:/Users/Onkar/Cluster_test.csv').iloc[:,1:] #
+biomarker_list = ['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']
+Biomarkers_train = train_adata.to_df()[biomarker_list]
+Biomarkers_test = test_adata.to_df()[biomarker_list]
+Cluster_train = train_adata.obs["Cluster"]
+Cluster_test = test_adata.obs["Cluster"]
 tree_model = lgb.LGBMClassifier()
 
 clf, y_pred_test, saved_model = Can_pred_Biomarker(Biomarkers_train, Cluster_train, Biomarkers_test, tree_model)
@@ -335,24 +164,20 @@ explainer = Lime_plot(Biomarkers_train)
 exp = explainer.explain_instance(Biomarkers_test.iloc[2], clf.predict_proba, num_features=5)
 exp.show_in_notebook(show_table=True) 
 
-#%%
-#3 Class AUROC Score
 
 
-from sklearn.multioutput import MultiOutputClassifier
-import pandas as pd
-import lightgbm as lgb
-from sklearn.preprocessing import LabelEncoder; from sklearn.model_selection import train_test_split
-from sklearn import preprocessing; from sklearn.preprocessing import LabelBinarizer
-from sklearn.metrics import roc_auc_score; from sklearn.neighbors import KNeighborsClassifier
-import pandas as pd; import lightgbm as lgb
-from sklearn.preprocessing import LabelEncoder; from sklearn.model_selection import train_test_split
-from sklearn import preprocessing; from sklearn.linear_model import LogisticRegression
-import shap; import numpy as np; shap.initjs(); import joblib
+#%%Save in training.py
+#This has AUROC scores and LGBM model saved as pickle file
 
-wd = "D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/"
+from sklearn.multioutput import MultiOutputClassifier; import lightgbm as lgb
+import pandas as pd; import shap; import numpy as np; import joblib
+from sklearn import preprocessing; from sklearn.preprocessing import LabelEncoder;
+from sklearn import preprocessing; from sklearn.preprocessing import LabelBinarizer, LabelEncoder
+from sklearn.metrics import roc_auc_score; from sklearn.model_selection import train_test_split
+
+#wd = "D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files"
     
-def three_class_auroc(X, test_X, Y, test_Y, number_of_genes, model):
+def three_class_auroc(X, test_X, Y, test_Y, comm_genes, model):
     
     def multiclass_roc_auc_score(truth, pred, average="macro"):
         lb = LabelBinarizer()
@@ -360,68 +185,61 @@ def three_class_auroc(X, test_X, Y, test_Y, number_of_genes, model):
         truth = lb.transform(truth)
         pred = lb.transform(pred)
         return roc_auc_score(truth, pred, average=average)
-
-    Y=Y.iloc[:,:number_of_genes]
     MinMax_scaler_y = preprocessing.MinMaxScaler(feature_range =(0, 1))
+    
+    Y = Y[comm_genes]
     Y = MinMax_scaler_y.fit_transform(Y) 
     Y = pd.DataFrame(data=Y)
-    Y=Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
+    Y = Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
     
-    #test_Y.drop(['Sno'],axis=1,inplace=True)
-    test_Y=test_Y.iloc[:,:number_of_genes]
-    test_Y=MinMax_scaler_y.transform(test_Y)
-    test_Y=pd.DataFrame(data=test_Y)
-    test_Y=test_Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
+    test_Y = test_Y[comm_genes]
+    test_Y = MinMax_scaler_y.transform(test_Y)
+    test_Y = pd.DataFrame(data=test_Y)
+    test_Y = test_Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
     
-    
-    #X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size = 0.15, random_state = 0)
     clf = MultiOutputClassifier(model).fit(X, Y)
-    y_pred_test=clf.predict(test_X)
-    y_pred_test = pd.DataFrame(y_pred_test)
-    
-    
-    result = []
-    for col in test_Y:
-        score = multiclass_roc_auc_score(y_pred_test[col],test_Y[col])
-        result.append(score)
-        
-    res = pd.DataFrame(index=Y.columns)
-    res["Gene"] = Y.columns
-    res["AUC"] = result
-    return res.to_csv('AUROC_3_Class_LGBM.csv'), joblib.dump(clf, 'ResNet50-LGBM_200.pkl')
+    return joblib.dump(clf, OUT_PATH/'ResNet50-LGBM_comm_gene.pkl')
 
-X = Sample1.obsm["Resnet50_Train_Features"]#pd.read_csv('D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/features_flatten_train.csv')
-#X = X.iloc[:,1:]
-test_X = Sample2.obsm["Resnet50_Test_Features"]#pd.read_csv('D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/features_flatten_test.csv')#
-#test_X = test_X.iloc[:,1:]
-Y = Sample1_un_norm.to_df()[Sample1_un_norm.to_df().sum().sort_values(ascending=False).index[:500]] 
-test_Y = Sample2_un_norm.to_df()[Sample2_un_norm.to_df().sum().sort_values(ascending=False).index[:500]] 
-number_of_top_genes = 200
+comm_genes = ["PABPC1", "GNAS", "HSP90AB1", "TFF3",
+                      "ATP1A1", "COX6C", "B2M", "FASN",
+                      "ACTG1", "HLA-B"]
+X = train_adata.obsm["Resnet50_Train_Features"]
+test_X = test_adata.obsm["Resnet50_Train_Features"]
+Y = train_adata.to_df()
+test_Y = test_adata.to_df()
 model = lgb.LGBMClassifier()
 
-three_class_auroc(X, test_X, Y, test_Y, number_of_top_genes, model)
-#%%
-#LIME Plots for Image Tiles
-def LGBM(train_X, train_Y): 
-    train_Y = train_Y.iloc[:,:2]
-    Standard_scaler_y = preprocessing.MinMaxScaler(feature_range =(0, 1))
-    train_Y = pd.DataFrame(data = Standard_scaler_y.fit_transform(train_Y))
-    train_Y=train_Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
-    X_train, X_test, y_train, y_test = train_test_split(train_X, train_Y, test_size = 0.15, random_state = 0)
-    clf = MultiOutputClassifier(lgb.LGBMClassifier()).fit(X_train, y_train) #LGBM model is fit for X and Y
+res = three_class_auroc(X, test_X, Y, test_Y, comm_genes, model)
+
+
+
+#%%Visualization.py
+#LIME Plots for Image Tiles for Classification Model
+
+import pandas as pd; import numpy as np; import lightgbm as lgb
+from sklearn.multioutput import MultiOutputClassifier; from sklearn import preprocessing
+import os; from matplotlib import pyplot as plt; import joblib
+from tensorflow.keras.preprocessing import image as image_fun
+from keras.applications import VGG16, ResNet50
+import scipy as sp; from scipy import ndimage as ndi; import lime; from lime import lime_image
+from skimage.feature import peak_local_max; from skimage.segmentation import watershed; from skimage.measure import label
+import skimage; from skimage.color import rgb2hed; from skimage.morphology import area_opening
+
+def LGBM(): 
+    clf = joblib.load(OUT_PATH/'ResNet50-LGBM_comm_gene.pkl')
     return clf
 
-train_X = Sample1.obsm["Resnet50_Train_Features"] #pd.read_csv('D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/features_flatten_train.csv') #Train_Features 
-train_X = train_X.iloc[:,1:]
-train_Y = Sample1.to_df()[Sample1.to_df().sum().sort_values(ascending=False).index[:500]] #pd.read_csv('Breast_1A_500_top.csv') #
-#train_Y = train_Y.drop(['Sno'], axis=1)
-Model_LGBM = LGBM(train_X, train_Y)
 
 resnet_model = ResNet50(weights="imagenet", include_top=False, input_shape=(299, 299, 3), pooling="avg")
-gene_list = train_Y.columns.tolist()
+#gene_list = ['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']
+comm_genes = ["PABPC1", "GNAS", "HSP90AB1", "TFF3",
+                      "ATP1A1", "COX6C", "B2M", "FASN",
+                      "ACTG1", "HLA-B"]
+
+Model_LGBM = LGBM()
     
 def model_predict_gene(gene):
-    i = gene_list.index(gene)
+    i = comm_genes.index(gene)
     def combine_model_predict(tile):
         feature = resnet_model.predict(tile)
         feature = feature.reshape((10, 2048))
@@ -448,7 +266,6 @@ def watershed_segment(image):
     annotation_hed = rgb2hed(image)
     annotation_h = annotation_hed[:,:,0]
     annotation_h *= 255.0 / np.percentile(annotation_h, q=80)
-#     annotation_h = np.clip(annotation_h, a_min=0, a_max=255)
     thresh = skimage.filters.threshold_otsu(annotation_h)
     im_fgnd_mask = sp.ndimage.morphology.binary_fill_holes(
         annotation_h < thresh
@@ -462,7 +279,6 @@ def watershed_segment(image):
     im_nuclei_seg_mask = area_opening(labels, area_threshold=80).astype(np.int)
     return im_nuclei_seg_mask
 
-
 def pred_label(tile):
     feature = resnet_model.predict(tile)
     feature = feature.reshape((1, 2048))
@@ -470,130 +286,31 @@ def pred_label(tile):
     return prediction
 
 gene = "COX6C"
-#i = gene_list.get_loc(input('Enter Gene Name :'))
 images = transform_img_fn([os.path.join('D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/tiles/block2/block2-7831-11564-299.jpeg')])
 explainer = lime_image.LimeImageExplainer()
 explanation = explainer.explain_instance(images[0].astype('double'), model_predict_gene(gene), segmentation_fn= None, top_labels=3, num_samples=100)
 dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
 heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
-plt.imshow(heatmap, cmap = 'RdBu', vmin  = -1, vmax = 1)
+plt.imshow(heatmap, cmap = 'RdBu', vmin  = -heatmap.max(), vmax = heatmap.max())
 plt.colorbar()
 print(pred_label(images))
-#%%%
-import joblib
+
+
+
+#%%Save in utils.py
+#UMAP Features for Cancer and Non-Cancer Image Tiles' ResNet50 Features
+
 import pandas as pd
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import pysal
-from pysal.explore import esda
-import pysal.lib as lps
-from esda.moran import Moran, Moran_Local, Moran_BV, Moran_Local_BV
-import splot
-from splot.esda import moran_scatterplot, plot_moran, lisa_cluster, plot_moran_bv_simulation, plot_moran_bv, plot_local_autocorrelation
-from libpysal.weights.contiguity import Queen
-from libpysal import examples
-import numpy as np
-import os
+import datashader as ds; import datashader.transfer_functions as tf; import datashader.bundling as bd
+import colorcet; import bokeh.plotting as bpl; import holoviews as hv
+import matplotlib.colors; import matplotlib.cm; import matplotlib.pyplot as plt
+import bokeh.transform as btr; import holoviews.operation.datashader as hd; import umap.plot
 
-
-def Spatial_AutoCorr(Sample1, Sample2, Model, test_X, gene, wd):
-    Sample2.obsm["gpd"] = gpd.GeoDataFrame(Sample2.obs,
-                                                 geometry=gpd.points_from_xy(
-                                                     Sample2.obs.imagecol, 
-                                                     Sample2.obs.imagerow))
-
-    test_Y = Sample2.to_df()[Sample1.to_df().sum().sort_values(ascending=False).index[:500]] 
-    Y = Sample1.to_df()[Sample1.to_df().sum().sort_values(ascending=False).index[:500]] 
-    gene_list = Y.columns.tolist()
-
-    Y=Y.iloc[:,:200]
-    MinMax_scaler_y = preprocessing.MinMaxScaler(feature_range =(0, 1))
-    Y = MinMax_scaler_y.fit_transform(Y) 
-    Y = pd.DataFrame(data=Y)
-    Y=Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
-
-    test_Y=test_Y.iloc[:,:200]
-    test_Y=MinMax_scaler_y.transform(test_Y)
-    test_Y=pd.DataFrame(data=test_Y)
-    test_Y=test_Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
-
-    w = Queen.from_dataframe(Sample2.obsm["gpd"])
-
-    y = Model.predict(test_X)
-    i = gene_list.index(gene)+1
-    y = pd.DataFrame(y[:,:i])
-
-    x = test_Y[[0]].values
-    Sample2.obsm["gpd"]["gc_{}".format(gene)] = x
-    Sample2.obsm["gpd"]["pred_{}".format(gene)] = y.values
-    tissue_image = Sample2.uns["spatial"]["block2"]["images"]["fulres"]
+def Umap_points(resnet_features, label):
     
-    
-    moran = Moran(y,w)
-    moran_bv = Moran_BV(y, x, w)
-    moran_loc = Moran_Local(y, w)
-    moran_loc_bv = Moran_Local_BV(y, x, w)
+    mapper = umap.UMAP().fit(resnet_features)
+    return umap.plot.points(mapper, labels=label, theme='fire', background='black')
 
-    fig, ax = plt.subplots(figsize=(5,5))
-    moran_plot = moran_scatterplot(moran_bv, ax=ax)
-    ax.set_xlabel('prediction of gene {}'.format(gene))
-    ax.set_ylabel('Spatial lag of ground truth of gene {}'.format(gene))
-    plt.tight_layout()
-    plt.show()
-
-
-    def plot_choropleth(gdf, 
-                        attribute_1,
-                        attribute_2,
-                        bg_img,
-                        alpha=0.5,
-                        scheme='Quantiles', 
-                        cmap='YlGnBu', 
-                        legend=True):
-
-        fig, axs = plt.subplots(2,1, figsize=(5, 8),
-                                subplot_kw={'adjustable':'datalim'})
-
-        # Choropleth for attribute_1
-        gdf.plot(column=attribute_1, scheme=scheme, cmap=cmap,
-                 legend=legend, legend_kwds={'loc': 'upper left',
-                                             'bbox_to_anchor': (0.92, 0.8)},
-                 ax=axs[0], alpha=alpha, markersize=2)
-
-        axs[0].imshow(bg_img)
-        axs[0].set_title('choropleth plot for {}'.format(attribute_1), y=0.8)
-        axs[0].set_axis_off()
-
-        # Choropleth for attribute_2
-        gdf.plot(column=attribute_2, scheme=scheme, cmap=cmap,
-                 legend=legend, legend_kwds={'loc': 'upper left',
-                                             'bbox_to_anchor': (0.92, 0.8)},
-                 ax=axs[1], alpha=alpha, markersize=2)
-
-        axs[1].imshow(bg_img)
-        axs[1].set_title('choropleth plot for {}'.format(attribute_2), y=0.8)
-        axs[1].set_axis_off()
-
-        plt.tight_layout()
-
-        return fig, ax
-
-    choropleth_plot = plot_choropleth(Sample2.obsm["gpd"], "gc_{}".format(gene),"pred_{}".format(gene),tissue_image)
-    plt.show()
-
-    lisa_cluster(moran_loc_bv, Sample2.obsm["gpd"], p=0.05, 
-                 figsize = (9,9), markersize=12, **{"alpha":0.8})
-    lisa_plot = plt.imshow(Sample2.uns["spatial"]["block2"]["images"]["fulres"])
-    plt.show()
-    return moran_plot, choropleth_plot, lisa_plot
-
-
-
-gene = "COX6C"
-Sample1 = Sample1
-Sample2 = Sample2
-wd = 'D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/'
-test_X = Sample2.obsm["Resnet50_Test_Features"]#pd.read_csv(wd+"Resnet_unnorm_test.csv").iloc[:,1:] 
-Model = joblib.load(wd+"ResNet50-LGBM_200_unnorm_updated.pkl")
-
-a,b,c = Spatial_AutoCorr(Sample1, Sample2, Model, test_X, gene, wd)
+resnet_features = train_adata.obsm["Resnet50_Train_Features"].values
+label = train_adata.obs["Cluster"].values
+Umap_points(resnet_features, label)
