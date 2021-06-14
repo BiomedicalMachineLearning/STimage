@@ -45,7 +45,7 @@ def ResNet50_features_test(test, pre_model):
     features_flatten_test = pd.DataFrame(features_flatten_test)
     features_flatten_test.index = test_adata.obsm.to_df().index
     test_adata.obsm["Resnet50_Test_Features"] = features_flatten_test
-    
+#----------------------------------------------------------------------------------------------------------- 
 train = train_adata.obs["tile_path"]
 test = test_adata.obs["tile_path"]
 model = ResNet50(weights="imagenet", include_top=False, input_shape=(299,299, 3), pooling="avg")
@@ -53,7 +53,8 @@ ResNet50_features_train(train, model)
 ResNet50_features_test(test, model)
 
 
-
+#-----------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 #%% Save in Preprocessing.py
 #Train and Test Set Cancer vs Non-Cancer spot Labelling done by Clustering; Clusters for Image Tiles save in Sample.obs
 
@@ -95,6 +96,7 @@ def Clusters(train_tiles, train_adata, test_tiles, test_adata, model):
     y_hc_test["Cluster"] = model.fit_predict(result_test)
     test_adata.obs["Cluster"] = y_hc_test["Cluster"]
     
+#-----------------------------------------------------------------------------------------------------------
 model = AgglomerativeClustering(n_clusters = 2, affinity = 'euclidean', linkage = 'ward')
 train_tiles = train_adata.obs["tile_path"]
 test_tiles = test_adata.obs["tile_path"]
@@ -103,7 +105,8 @@ test_adata = test_adata
 
 Clusters(train_tiles, train_adata, test_tiles, test_tiles, model)
 
-
+#-----------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 
 #%% Save in Training.py
 #Cancer vs Non-Cancer Prediction from Biomarkers Expression
@@ -146,6 +149,7 @@ def Lime_plot(Biomarkers_train):
                         verbose=True, mode='classification')
     return explainer
 
+#-----------------------------------------------------------------------------------------------------------
 biomarker_list = ['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']
 Biomarkers_train = train_adata.to_df()[biomarker_list]
 Biomarkers_test = test_adata.to_df()[biomarker_list]
@@ -165,7 +169,8 @@ exp = explainer.explain_instance(Biomarkers_test.iloc[2], clf.predict_proba, num
 exp.show_in_notebook(show_table=True) 
 
 
-
+#-----------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 #%%Save in training.py
 #This has AUROC scores and LGBM model saved as pickle file
 
@@ -200,6 +205,7 @@ def three_class_auroc(X, test_X, Y, test_Y, comm_genes, model):
     clf = MultiOutputClassifier(model).fit(X, Y)
     return joblib.dump(clf, OUT_PATH/'ResNet50-LGBM_comm_gene.pkl')
 
+#-----------------------------------------------------------------------------------------------------------
 comm_genes = ["PABPC1", "GNAS", "HSP90AB1", "TFF3",
                       "ATP1A1", "COX6C", "B2M", "FASN",
                       "ACTG1", "HLA-B"]
@@ -212,7 +218,8 @@ model = lgb.LGBMClassifier()
 res = three_class_auroc(X, test_X, Y, test_Y, comm_genes, model)
 
 
-
+#-----------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 #%%Visualization.py
 #LIME Plots for Image Tiles for Classification Model
 
@@ -285,6 +292,7 @@ def pred_label(tile):
     prediction = Model_LGBM.predict_proba(feature)
     return prediction
 
+#-----------------------------------------------------------------------------------------------------------
 gene = "COX6C"
 images = transform_img_fn([os.path.join('D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files/tiles/block2/block2-7831-11564-299.jpeg')])
 explainer = lime_image.LimeImageExplainer()
@@ -296,7 +304,8 @@ plt.colorbar()
 print(pred_label(images))
 
 
-
+#-----------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
 #%%Save in utils.py
 #UMAP Features for Cancer and Non-Cancer Image Tiles' ResNet50 Features
 
@@ -311,6 +320,13 @@ def Umap_points(resnet_features, label):
     mapper = umap.UMAP().fit(resnet_features)
     return umap.plot.points(mapper, labels=label, theme='fire', background='black')
 
+#-----------------------------------------------------------------------------------------------------------
 resnet_features = train_adata.obsm["Resnet50_Train_Features"].values
 label = train_adata.obs["Cluster"].values
 Umap_points(resnet_features, label)
+
+
+#-----------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------
+#%% Visualization.py Spatial Correlation
+
