@@ -13,7 +13,6 @@ from keras.applications import VGG16, ResNet50, inception_v3, DenseNet121, image
 from keras.callbacks import ModelCheckpoint; from keras.preprocessing.image import load_img, img_to_array
 from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Flatten, GlobalAveragePooling2D
 
-wd = "D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files"
 def ResNet50_features_train(train, pre_model):
  
     x_scratch_train = []
@@ -121,19 +120,10 @@ from sklearn.preprocessing import LabelBinarizer; from sklearn.model_selection i
 import shap; import lime; import lime.lime_tabular
 
 
-def multiclass_roc_auc_score(truth, pred, average="macro"):
-    lb = LabelBinarizer()
-    lb.fit(truth)
-    truth = lb.transform(truth)
-    pred = lb.transform(pred)
-    return roc_auc_score(truth, pred, average=average)
-
 def Can_pred_Biomarker(Biomarkers_train, Cluster_train, Biomarkers_test, tree_model):
     X_train, X_test, y_train, y_test = train_test_split(Biomarkers_train, Cluster_train, test_size = 0.15, random_state = 0, stratify=Cluster_train)
-    clf = tree_model
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size = 0.15, random_state = 0)
-    clf = MultiOutputClassifier(model).fit(X_train, y_train)
-    return clf, clf.predict(Biomarkers_test), joblib.dump(OUTPATH/'Cancer_vs_Non-Cancer_clf.pkl')
+    clf = MultiOutputClassifier(tree_model).fit(X_train, y_train)
+    return clf.predict(Biomarkers_test), joblib.dump(clf, OUTPATH/'Cancer_vs_Non-Cancer_clf.pkl')
 
 def Shapley_plot(Biomarkers_train, Biomarkers_test, clf):
     shap.initjs()
@@ -157,11 +147,11 @@ Cluster_train = train_adata.obs["Cluster"]
 Cluster_test = test_adata.obs["Cluster"]
 tree_model = lgb.LGBMClassifier()
 
-clf, y_pred_test, saved_model = Can_pred_Biomarker(Biomarkers_train, Cluster_train, Biomarkers_test, tree_model)
+y_pred_test, clf = Can_pred_Biomarker(Biomarkers_train, Cluster_train, Biomarkers_test, tree_model)
 cm = confusion_matrix(Cluster_test, y_pred_test)
 print('Confusion matrix\n\n', cm)
-multiclass_roc_score = multiclass_roc_auc_score(Cluster_test, y_pred_test, average="weighted")
-print('AUROC-Score:', multiclass_roc_score)
+roc_score = roc_auc_score(Cluster_test, y_pred_test, average="weighted")
+print('AUROC-Score:', roc_score)
 
 Shapley_plot(Biomarkers_train, Biomarkers_test, clf)
 explainer = Lime_plot(Biomarkers_train)
@@ -182,14 +172,15 @@ from sklearn.metrics import roc_auc_score; from sklearn.model_selection import t
 
 #wd = "D:/onkar/Projects/Project_Spt.Transcriptomics/Output_files"
     
+def multiclass_roc_auc_score(truth, pred, average="macro"):
+    lb = LabelBinarizer()
+    lb.fit(truth)
+    truth = lb.transform(truth)
+    pred = lb.transform(pred)
+    return roc_auc_score(truth, pred, average=average)
+
 def three_class_auroc(X, test_X, Y, test_Y, comm_genes, model):
     
-    def multiclass_roc_auc_score(truth, pred, average="macro"):
-        lb = LabelBinarizer()
-        lb.fit(truth)
-        truth = lb.transform(truth)
-        pred = lb.transform(pred)
-        return roc_auc_score(truth, pred, average=average)
     MinMax_scaler_y = preprocessing.MinMaxScaler(feature_range =(0, 1))
     
     Y = Y[comm_genes]
@@ -203,7 +194,22 @@ def three_class_auroc(X, test_X, Y, test_Y, comm_genes, model):
     test_Y = test_Y.apply(lambda x: pd.qcut(x, 3,duplicates='drop',labels=False))
     
     clf = MultiOutputClassifier(model).fit(X, Y)
-    return joblib.dump(clf, OUT_PATH/'ResNet50-LGBM_comm_gene.pkl')
+    joblib.dump(clf, OUT_PATH/'ResNet50-LGBM_comm_gene.pkl')
+    
+    y_pred_test = clf.predict_proba(test_X)
+    y_pred_test = np.array(y_pred_test)
+    
+    result_ovr =[]; multi_auroc = []
+    for col in test_Y:
+        score_ovr =  roc_auc_score(test_Y[col], y_pred_test[col], multi_class='ovr', average='weighted')
+        score_multi = multiclass_roc_auc_score(test_Y[col], y_pred_test[col], average='weighted')
+        result_ovr.append(score_ovr)
+        multi_auroc.append(score_multi)
+        
+    result_ovr = pd.DataFrame()
+    result_ovr["Multi_class_defined_auroc"] = multi_auroc
+    result_ovr.index = Y.columns
+    return result_ovr
 
 #-----------------------------------------------------------------------------------------------------------
 comm_genes = ["PABPC1", "GNAS", "HSP90AB1", "TFF3",
@@ -215,7 +221,7 @@ Y = train_adata.to_df()
 test_Y = test_adata.to_df()
 model = lgb.LGBMClassifier()
 
-res = three_class_auroc(X, test_X, Y, test_Y, comm_genes, model)
+result = three_class_auroc(X, test_X, Y, test_Y, comm_genes, model)
 
 
 #-----------------------------------------------------------------------------------------------------------
@@ -232,10 +238,6 @@ import scipy as sp; from scipy import ndimage as ndi; import lime; from lime imp
 from skimage.feature import peak_local_max; from skimage.segmentation import watershed; from skimage.measure import label
 import skimage; from skimage.color import rgb2hed; from skimage.morphology import area_opening
 
-def LGBM(): 
-    clf = joblib.load(OUT_PATH/'ResNet50-LGBM_comm_gene.pkl')
-    return clf
-
 
 resnet_model = ResNet50(weights="imagenet", include_top=False, input_shape=(299, 299, 3), pooling="avg")
 #gene_list = ['COX6C','MALAT1','TTLL12','PGM5','KRT5','LINC00645','SLITRK6', 'CPB1']
@@ -243,7 +245,7 @@ comm_genes = ["PABPC1", "GNAS", "HSP90AB1", "TFF3",
                       "ATP1A1", "COX6C", "B2M", "FASN",
                       "ACTG1", "HLA-B"]
 
-Model_LGBM = LGBM()
+Model_LGBM = joblib.load(OUT_PATH/'ResNet50-LGBM_comm_gene.pkl')
     
 def model_predict_gene(gene):
     i = comm_genes.index(gene)
@@ -253,12 +255,6 @@ def model_predict_gene(gene):
         prediction = Model_LGBM.predict_proba(feature)
         return prediction[i]
     return combine_model_predict
-
-def pred_label(tile):
-    feature = resnet_model.predict(tile)
-    feature = feature.reshape((1, 2048))
-    prediction = Model_LGBM.predict_proba(feature)
-    return prediction
 
 def transform_img_fn(path_list):
     out = []
@@ -301,7 +297,7 @@ dict_heatmap = dict(explanation.local_exp[explanation.top_labels[0]])
 heatmap = np.vectorize(dict_heatmap.get)(explanation.segments) 
 plt.imshow(heatmap, cmap = 'RdBu', vmin  = -heatmap.max(), vmax = heatmap.max())
 plt.colorbar()
-print(pred_label(images))
+#print(pred_label(images))
 
 
 #-----------------------------------------------------------------------------------------------------------
