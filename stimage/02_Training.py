@@ -9,7 +9,7 @@ import tensorflow as tf
 from anndata import read_h5ad
 
 from ._data_generator import DataGenerator
-from ._model import CNN_NB_multiple_genes, PrinterCallback
+from ._model import CNN_NB_multiple_genes, PrinterCallback, CNN_linear_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="STimage software --- Training")
