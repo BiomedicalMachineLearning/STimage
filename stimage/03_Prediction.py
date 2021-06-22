@@ -48,8 +48,8 @@ if __name__ == "__main__":
     if model_name == "NB":
         from scipy.stats import nbinom
         y_preds = []
-        for i in range(10):
-            n = test_predictions[i][:, 0];
+        for i in range(n_genes):
+            n = test_predictions[i][:, 0]
             p = test_predictions[i][:, 1]
             y_pred = nbinom.mean(n, p)
             y_preds.append(y_pred)
