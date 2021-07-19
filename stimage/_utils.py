@@ -343,6 +343,7 @@ def tiling(
         target_size: int = 299,
         verbose: bool = False,
         copy: bool = False,
+        save_name: str = "tile_path",
 ) -> Optional[AnnData]:
     """\
     Tiling H&E images to small tiles based on spot spatial location
@@ -411,7 +412,7 @@ def tiling(
 
             pbar.update(1)
 
-    adata.obs["tile_path"] = tile_names
+    adata.obs[save_name] = tile_names
     return adata if copy else None
 
 
@@ -419,6 +420,7 @@ from typing import Optional, Union
 from anndata import AnnData
 from PIL import Image
 from pathlib import Path
+
 
 
 def ensembl_to_id(
