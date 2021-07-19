@@ -432,9 +432,8 @@ def ensembl_to_id(
     else:
         ens_path = Path(__file__).parent.absolute() / "ensembl.tsv"
     ens_df = pd.read_csv(ens_path, sep="\t")
-    a = adata.var_names.intersection(ens_df["Ensembl ID(supplied by Ensembl)"])
-    b = ens_df["Approved symbol"][ens_df["Ensembl ID(supplied by Ensembl)"].isin(a)]
-    var_dic = dict(zip(a, b))
+    a = pd.Index(ens_df["Ensembl ID(supplied by Ensembl)"]).intersection(adata.var_names)
+    var_dic = dict(zip(ens_df["Ensembl ID(supplied by Ensembl)"], ens_df["Approved symbol"]))
     adata = adata[:, a].copy()
     adata.var_names = adata.var_names.map(var_dic)
     return adata if copy else None
