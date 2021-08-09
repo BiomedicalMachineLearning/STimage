@@ -8,7 +8,7 @@ import seaborn as sns
 from anndata import read_h5ad
 from scipy import stats
 
-from ._utils import gene_plot
+from _utils import gene_plot
 
 
 def calculate_r(test_adata, prediction_adata, genes):

@@ -1,7 +1,11 @@
 import warnings
 from typing import Optional, Union
+import cv2 as cv
+import scanpy
 from anndata import AnnData
 from matplotlib import pyplot as plt
+
+
 # from .utils import get_img_from_fig, checkType
 
 
@@ -113,7 +117,7 @@ def gene_plot(
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
-    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]["use_quality"]]
+    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
     # Overlay the tissue image
     a.imshow(image, alpha=tissue_alpha, zorder=-1, )
 
@@ -272,15 +276,16 @@ def Read10X(
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
-    if quality == "fullres":
+    if quality == "fulres":
         image_coor = adata.obsm["spatial"]
+        adata.uns["spatial"][library_id]["images"][quality] = plt.imread(source_image_path, 0)
     else:
         scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_" + quality + "_scalef"]
         image_coor = adata.obsm["spatial"] * scale
 
     adata.obs["imagecol"] = image_coor[:, 0]
     adata.obs["imagerow"] = image_coor[:, 1]
-    adata.uns["spatial"]["use_quality"] = quality
+    adata.uns["spatial"][library_id]["use_quality"] = quality
 
     return adata
 
@@ -291,11 +296,11 @@ def ReadOldST(
         image_file: Union[str, Path] = None,
         library_id: str = "OldST",
         scale: float = 1.0,
-        quality: str = "hires"
+        quality: str = "hires",
+        spot_diameter_fullres: float = 50,
 ) -> AnnData:
     """\
     Read Old Spatial Transcriptomics data
-
     Parameters
     ----------
     count_matrix_file
@@ -310,19 +315,55 @@ def ReadOldST(
         Set scale factor.
     quality
         Set quality that convert to stlearn to use. Store in anndata.obs['imagecol' & 'imagerow']
+    spot_diameter_fullres
+        Diameter of spot in full resolution
     Returns
     -------
     AnnData
     """
 
-    adata = stlearn.read.file_table(count_matrix_file)
-    adata = stlearn.add.parsing(adata,
-                                coordinates_file=spatial_file)
-    stlearn.add.image(adata, library_id=library_id, quality=quality, imgpath=image_file, scale=scale)
-
-    adata.obs['sum_counts'] = np.array(adata.X.sum(axis=1))
+    adata = scanpy.read_text(count_matrix_file)
+    spot_df = pd.read_csv(spot_path, index_col=0)
+    comm_index = pd.Series(list(set(spot_df.index).intersection(set(adata.obs_names))))
+    adata = adata[comm_index]
+    adata.obs["imagecol"] = spot_df["X"]
+    adata.obs["imagerow"] = spot_df["Y"]
+    stlearn.add.image(
+        adata,
+        library_id=library_id,
+        quality=quality,
+        imgpath=image_file,
+        scale=scale,
+        spot_diameter_fullres=spot_diameter_fullres,
+    )
 
     return adata
+
+
+# Test progress bar
+
+from typing import Optional, Union
+from anndata import AnnData
+from PIL import Image, ImageChops
+from pathlib import Path
+
+
+def ensembl_to_id(
+        adata: AnnData,
+        ens_path: Union[Path, str] = None,
+        verbose: bool = False,
+        copy: bool = True,
+) -> Optional[AnnData]:
+    if ens_path:
+        ens_path = ens_path
+    else:
+        ens_path = Path(__file__).parent.absolute() / "ensembl.tsv"
+    ens_df = pd.read_csv(ens_path, sep="\t")
+    a = pd.Index(ens_df["Ensembl ID(supplied by Ensembl)"]).intersection(adata.var_names)
+    var_dic = dict(zip(ens_df["Ensembl ID(supplied by Ensembl)"], ens_df["Approved symbol"]))
+    adata = adata[:, a].copy()
+    adata.var_names = adata.var_names.map(var_dic)
+    return adata if copy else None
 
 
 from typing import Optional, Union
@@ -341,6 +382,8 @@ def tiling(
         library_id: str = None,
         crop_size: int = 40,
         target_size: int = 299,
+        stain_normaliser = None,
+        image_select: Union[str, np.ndarray] = "HE",
         verbose: bool = False,
         copy: bool = False,
         save_name: str = "tile_path",
@@ -377,11 +420,16 @@ def tiling(
     # Check the exist of out_path
     if not os.path.isdir(out_path):
         os.mkdir(out_path)
-
-    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
+    if type(image_select) == str:
+        image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
+    else:
+        image = image_select
     if image.dtype == np.float32 or image.dtype == np.float64:
         image = (image * 255).astype(np.uint8)
     img_pillow = Image.fromarray(image)
+
+    if stain_normaliser:
+        stain_normaliser.fit_source(scale_img(img_pillow))
     tile_names = []
 
     with tqdm(
@@ -390,6 +438,7 @@ def tiling(
             bar_format="{l_bar}{bar} [ time left: {remaining} ]",
     ) as pbar:
         for imagerow, imagecol in zip(adata.obs["imagerow"], adata.obs["imagecol"]):
+
             imagerow_down = imagerow - crop_size / 2
             imagerow_up = imagerow + crop_size / 2
             imagecol_left = imagecol - crop_size / 2
@@ -397,6 +446,8 @@ def tiling(
             tile = img_pillow.crop(
                 (imagecol_left, imagerow_down, imagecol_right, imagerow_up)
             )
+            if stain_normaliser:
+                tile = stain_normaliser.transform_tile(tile)
             # tile.thumbnail((target_size, target_size), Image.ANTIALIAS)
             tile = tile.resize((target_size, target_size))
             tile_name = library_id + "-" + str(imagecol) + "-" + str(imagerow) + "-" + str(crop_size)
@@ -416,26 +467,197 @@ def tiling(
     return adata if copy else None
 
 
+def calculate_bg(
+        adata: AnnData,
+        stain_normaliser=None,
+        crop_size: int = 40,
+        library_id: str = None,
+        copy: bool = False,
+) -> Optional[AnnData]:
+
+    if library_id is None:
+        library_id = list(adata.uns["spatial"].keys())[0]
+
+    img = Image.fromarray(adata.uns["spatial"][library_id]['images']["fulres"])
+    img_small = scale_img(img)
+    if stain_normaliser:
+        stain_normaliser.fit_source(scale_img(img_small))
+        img_small = stain_normaliser.transform_tile(img_small)
+
+    target_img_norm_filtered = filter_green(img_small, g_thresh=250)
+    target_img_norm_filtered = filter_grays(target_img_norm_filtered, tolerance=3)
+    tissue_mask = tissue_mask_grabcut(np.array(target_img_norm_filtered))
+    tissue_mask_up_scale = tissue_mask.resize(img.size, Image.ANTIALIAS)
+
+    _TILE_PATH = Path("/tmp") / (list(adata.uns["spatial"].keys())[0] + "_tissue_mask")
+    _TILE_PATH.mkdir(parents=True, exist_ok=True)
+
+    tiling(adata, _TILE_PATH, crop_size=crop_size, image_select=np.array(tissue_mask_up_scale),
+           save_name="tile_tissue_mask_path")
+
+    tissue_area_list = []
+    for img_path in adata.obs["tile_tissue_mask_path"]:
+        tile_mask = plt.imread(img_path, 0)
+        tissue_area = (tile_mask > 200).sum() / tile_mask.size
+        tissue_area_list.append(tissue_area)
+    adata.obs["tissue_area"] = np.array(tissue_area_list)
+    return adata if copy else None
+
+
+import warnings
 from typing import Optional, Union
 from anndata import AnnData
-from PIL import Image
-from pathlib import Path
+from matplotlib import pyplot as plt
 
 
+# from .utils import get_img_from_fig, checkType
 
-def ensembl_to_id(
+
+def tissue_area_plot(
         adata: AnnData,
-        ens_path: Union[Path, str] = None,
-        verbose: bool = False,
-        copy: bool = True,
+        threshold: float = None,
+        library_id: str = None,
+        data_alpha: float = 1.0,
+        tissue_alpha: float = 1.0,
+        vmin: float = None,
+        vmax: float = None,
+        cmap: str = "Spectral_r",
+        spot_size: Union[float, int] = 6.5,
+        show_legend: bool = False,
+        show_color_bar: bool = True,
+        show_axis: bool = False,
+        cropped: bool = True,
+        margin: int = 100,
+        name: str = None,
+        output: str = None,
+        copy: bool = False,
 ) -> Optional[AnnData]:
-    if ens_path:
-        ens_path = ens_path
+    colors = adata.obs["tissue_area"]
+
+    if threshold is not None:
+        colors = colors[colors > threshold]
+
+    index_filter = colors.index
+
+    filter_obs = adata.obs.loc[index_filter]
+
+    imagecol = filter_obs["imagecol"]
+    imagerow = filter_obs["imagerow"]
+
+    # Option for turning off showing figure
+    plt.ioff()
+
+    # Initialize matplotlib
+    fig, a = plt.subplots()
+    if vmin:
+        vmin = vmin
     else:
-        ens_path = Path(__file__).parent.absolute() / "ensembl.tsv"
-    ens_df = pd.read_csv(ens_path, sep="\t")
-    a = pd.Index(ens_df["Ensembl ID(supplied by Ensembl)"]).intersection(adata.var_names)
-    var_dic = dict(zip(ens_df["Ensembl ID(supplied by Ensembl)"], ens_df["Approved symbol"]))
-    adata = adata[:, a].copy()
-    adata.var_names = adata.var_names.map(var_dic)
-    return adata if copy else None
+        vmin = min(colors)
+    if vmax:
+        vmax = vmax
+    else:
+        vmax = max(colors)
+    # Plot scatter plot based on pixel of spots
+    plot = a.scatter(imagecol, imagerow, edgecolor="none", alpha=data_alpha, s=spot_size, marker="o",
+                     vmin=vmin, vmax=vmax, cmap=plt.get_cmap(cmap), c=colors)
+    plot.set_clim(vmin=vmin, vmax=vmax)
+    if show_color_bar:
+        cb = plt.colorbar(plot, cax=fig.add_axes(
+            [0.9, 0.3, 0.03, 0.38]), cmap=cmap)
+        cb.outline.set_visible(False)
+
+    if not show_axis:
+        a.axis('off')
+
+    if library_id is None:
+        library_id = list(adata.uns["spatial"].keys())[0]
+
+    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
+    # Overlay the tissue image
+    a.imshow(image, alpha=tissue_alpha, zorder=-1, )
+
+    if cropped:
+        imagecol = adata.obs["imagecol"]
+        imagerow = adata.obs["imagerow"]
+
+        a.set_xlim(imagecol.min() - margin,
+                   imagecol.max() + margin)
+
+        a.set_ylim(imagerow.min() - margin,
+                   imagerow.max() + margin)
+
+        a.set_ylim(a.get_ylim()[::-1])
+
+    if name is None:
+        name = "tissue_area_plot"
+    if output is not None:
+        fig.savefig(output + "/" + name, dpi=plt.figure().dpi,
+                    bbox_inches='tight', pad_inches=0)
+
+    plt.show()
+
+
+def thumbnail(img, size=(1000, 1000)):
+    """Converts Pillow images to a different size without modifying the original image
+    """
+    img_thumbnail = img.copy()
+    img_thumbnail.thumbnail(size)
+    return img_thumbnail
+
+
+def scale_img(img, scale_f=10):
+    return img.resize((img.size[0] // scale_f, img.size[1] // scale_f))
+
+
+def tissue_mask_grabcut(img):
+    img_cv = img[:, :, ::-1]  # Convert RGB to BGR
+    mask_initial = (np.array(Image.fromarray(img).convert('L')) < 250).astype(np.uint8)
+
+    # Grabcut
+    bgdModel = np.zeros((1, 65), np.float64)
+    fgdModel = np.zeros((1, 65), np.float64)
+    cv.grabCut(img_cv, mask_initial, None, bgdModel, fgdModel, 5, cv.GC_INIT_WITH_MASK)
+    mask_final = np.where((mask_initial == 2) | (mask_initial == 0), 0, 1).astype('uint8')
+
+    # Generate a rough 'filled in' mask of the tissue
+    kernal_64 = cv.getStructuringElement(cv.MORPH_ELLIPSE, (64, 64))
+    mask_closed = cv.morphologyEx(mask_final, cv.MORPH_CLOSE, kernal_64)
+    mask_opened = cv.morphologyEx(mask_closed, cv.MORPH_OPEN, kernal_64)
+
+    # Use rough mask to remove small debris in grabcut mask
+    mask_cleaned = cv.bitwise_and(mask_final, mask_final, mask=mask_opened)
+    mask_cleaned_pil = Image.fromarray(mask_cleaned.astype(np.bool))
+    return mask_cleaned_pil
+
+
+def filter_green(img, g_thresh=240):
+    """Replaces green pixels greater than threshold with white pixels
+
+    Used to remove background from tissue images
+    """
+    img = img.convert('RGB')
+    r, g, b = img.split()
+    green_mask = (np.array(g) > 240) * 255
+    green_mask_img = Image.fromarray(green_mask.astype(np.uint8), 'L')
+    white_image = Image.new('RGB', img.size, (255, 255, 255))
+    img_filtered = img.copy()
+    img_filtered.paste(white_image, mask=green_mask_img)
+    return img_filtered
+
+
+def filter_grays(img, tolerance=3):
+    """Replaces gray pixels greater than threshold with white pixels
+
+    Used to remove background from tissue images
+    """
+    img = img.convert('RGB')
+    r, g, b = img.split()
+    rg_diff = np.array(ImageChops.difference(r, g)) <= tolerance
+    rb_diff = np.array(ImageChops.difference(r, b)) <= tolerance
+    gb_diff = np.array(ImageChops.difference(g, b)) <= tolerance
+    grays = (rg_diff & rb_diff & gb_diff) * 255
+    grays_mask = Image.fromarray(grays.astype(np.uint8), 'L')
+    white_image = Image.new('RGB', img.size, (255, 255, 255))
+    img_filtered = img.copy()
+    img_filtered.paste(white_image, mask=grays_mask)
+    return img_filtered
