@@ -24,6 +24,7 @@ if __name__ == "__main__":
     normalization = config["DATASET"]["normalization"]
     META_PATH = Path(config["PATH"]["METADATA_PATH"])
     DATA_PATH = Path(config["PATH"]["DATA_PATH"])
+    DATA_PATH.mkdir(parents=True, exist_ok=True)
     TILING_PATH = Path(config["PATH"]["TILING_PATH"])
     convert_ensembl = config["DATASET"].getboolean("ensembl_to_id")
     platform = config["DATASET"]["platform"]

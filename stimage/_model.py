@@ -1,6 +1,11 @@
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras.applications.densenet import DenseNet121
+from tensorflow.keras.applications.inception_v3 import InceptionV3
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
 from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, Dropout, Lambda
 from tensorflow.keras.models import Model
 
@@ -166,16 +171,28 @@ def CNN_NB_trainable(tile_shape):
     return model
 
 
-def CNN_NB_multiple_genes(tile_shape, n_genes):
+def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     tile_input = Input(shape=tile_shape, name="tile_input")
-    resnet_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
+    if cnnbase == "resnet50":
+        cnn_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
+    elif cnnbase == "vgg16":
+        cnn_base = VGG16(input_tensor=tile_input, weights='imagenet', include_top=False)
+    elif cnnbase == "inceptionv3":
+        cnn_base = InceptionV3(input_tensor=tile_input, weights='imagenet', include_top=False)
+    elif cnnbase == "mobilenetv2":
+        cnn_base = MobileNetV2(input_tensor=tile_input, weights='imagenet', include_top=False)
+    elif cnnbase == "densenet121":
+        cnn_base = DenseNet121(input_tensor=tile_input, weights='imagenet', include_top=False)
+    elif cnnbase == "xception":
+        cnn_base = Xception(input_tensor=tile_input, weights='imagenet', include_top=False)
     #     stage_5_start = resnet_base.get_layer("conv5_block1_1_conv")
     #     for i in range(resnet_base.layers.index(stage_5_start)):
     #         resnet_base.layers[i].trainable = False
 
-    for i in resnet_base.layers:
-        i.trainable = False
-    cnn = resnet_base.output
+    if not ft:
+        for i in cnn_base.layers:
+            i.trainable = False
+    cnn = cnn_base.output
     cnn = GlobalAveragePooling2D()(cnn)
     #     cnn = Dropout(0.5)(cnn)
     #     cnn = Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.l1(0.01),
@@ -191,7 +208,7 @@ def CNN_NB_multiple_genes(tile_shape, n_genes):
     #     for i in range(8):
     #         losses["gene_{}".format(i)] = negative_binomial_loss(i)
     #     optimizer = tf.keras.optimizers.RMSprop(0.001)
-    optimizer = tf.keras.optimizers.Adam(0.0001)
+    optimizer = tf.keras.optimizers.Adam(1e-5)
     model.compile(loss=negative_binomial_loss,
                   optimizer=optimizer)
     return model

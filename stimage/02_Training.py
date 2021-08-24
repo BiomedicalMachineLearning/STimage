@@ -9,6 +9,7 @@ import tensorflow as tf
 from _data_generator import DataGenerator
 from _model import CNN_NB_multiple_genes, PrinterCallback
 from anndata import read_h5ad
+import scanpy as sc
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="STimage software --- Training")
@@ -62,6 +63,10 @@ if __name__ == "__main__":
             comm_genes = adata_all.var["mean_expression"].sort_values(ascending=False
                                                                       ).index[0:250]
 
+        if gene_selection == "HVG2000":
+            sc.pp.highly_variable_genes(adata_all, n_top_genes=2000)
+            comm_genes = adata_all.var_names[adata_all.var.highly_variable]
+
         adata_all = adata_all[:, comm_genes].copy()
         if model_name.split("_")[-1] == "classification":
             adata_all.X = adata_all.to_df().apply(lambda x: pd.qcut(x, 3, duplicates='drop', labels=False))
@@ -93,7 +98,7 @@ if __name__ == "__main__":
         output_types=(tf.float32, tuple([tf.float32] * n_genes)),
         output_shapes=([tile_size, tile_size, 3], tuple([1] * n_genes))
     )
-    train_gen_ = train_gen.shuffle(buffer_size=300).batch(batch_size).repeat(3).cache().prefetch(
+    train_gen_ = train_gen.shuffle(buffer_size=200).batch(batch_size).repeat(1).cache().prefetch(
         tf.data.experimental.AUTOTUNE)
 
     valid_gen = tf.data.Dataset.from_generator(
@@ -102,7 +107,7 @@ if __name__ == "__main__":
         output_types=(tf.float32, tuple([tf.float32] * n_genes)),
         output_shapes=([tile_size, tile_size, 3], tuple([1] * n_genes))
     )
-    valid_gen_ = valid_gen.shuffle(buffer_size=300).batch(batch_size).repeat(3).cache().prefetch(
+    valid_gen_ = valid_gen.shuffle(buffer_size=200).batch(batch_size).repeat(1).cache().prefetch(
         tf.data.experimental.AUTOTUNE)
 
     model = None
