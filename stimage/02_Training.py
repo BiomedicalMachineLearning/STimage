@@ -66,6 +66,8 @@ if __name__ == "__main__":
         if gene_selection == "HVG2000":
             sc.pp.highly_variable_genes(adata_all, n_top_genes=2000)
             comm_genes = adata_all.var_names[adata_all.var.highly_variable]
+        else:
+            comm_genes = gene_selection
 
         adata_all = adata_all[:, comm_genes].copy()
         if model_name.split("_")[-1] == "classification":
