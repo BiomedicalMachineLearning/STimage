@@ -7,7 +7,7 @@ from sklearn.neighbors import KDTree
 
 
 class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+    'data generator for flat prediction model'
 
     def __init__(self, adata, dim=(299, 299), n_channels=3, genes=None, aug=False, tile_path="tile_path"):
         'Initialization'

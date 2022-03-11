@@ -11,10 +11,9 @@ from tensorflow.keras.models import Model
 
 
 class PrinterCallback(tf.keras.callbacks.Callback):
-
-    # def on_train_batch_begin(self, batch, logs=None):
-    #     # Do something on begin of training batch
-
+    """
+    reformat the output at each epoch begin and end.
+    """
     def on_epoch_end(self, epoch, logs=None):
         print('EPOCH: {}, Train Loss: {}, Val Loss: {}'.format(epoch,
                                                                logs['loss'],
@@ -105,7 +104,7 @@ def negative_binomial_loss(y_true, y_pred):
 
     return nll
 
-
+"""
 def CNN_NB_model():
     inputs = Input(shape=(2048,))
     outputs = Dropout(0.5)(inputs)
@@ -169,9 +168,23 @@ def CNN_NB_trainable(tile_shape):
                   optimizer=optimizer,
                   metrics=[negative_binomial_loss])
     return model
+"""
 
 
 def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
+    """
+    
+    Parameters
+    ----------
+    tile_shape
+    n_genes
+    cnnbase
+    ft
+
+    Returns
+    -------
+
+    """
     tile_input = Input(shape=tile_shape, name="tile_input")
     if cnnbase == "resnet50":
         cnn_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)

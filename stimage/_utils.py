@@ -474,6 +474,27 @@ def calculate_bg(
         library_id: str = None,
         copy: bool = False,
 ) -> Optional[AnnData]:
+    """\
+    Calculate the background pixels for each tiles
+
+    Parameters
+    ----------
+    adata
+        Annotated data matrix.
+    stain_normaliser
+        normaliser class
+    library_id
+        Library id stored in AnnData.
+    crop_size
+        Size of tiles
+    copy
+        Return a copy instead of writing to adata.
+    Returns
+    -------
+    Depending on `copy`, returns or updates `adata` with the following fields.
+    **tissue_area** : `adata.obs` field
+        Calculate the background pixels for each tiles
+    """
 
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
@@ -532,6 +553,52 @@ def tissue_area_plot(
         output: str = None,
         copy: bool = False,
 ) -> Optional[AnnData]:
+    """\
+    Calculate the background pixels for each tiles
+
+    Parameters
+    ----------
+    adata
+        Annotated data matrix.
+    threshold
+        threshold to filter out tiles that less tissue area pixels
+    library_id
+        Library id stored in AnnData.
+    data_alpha
+        Opacity of the spot.
+    tissue_alpha
+        Opacity of the tissue.
+    vmin
+        Min value for color
+    vmax
+        Max value for color
+    cmap
+        Color map to use.
+    spot_size
+        Size of the spot.
+    show_legend
+        Show legend or not.
+    show_color_bar
+        Show color bar or not.
+    show_axis
+        Show axis or not.
+    cropped
+        Show Cropped image or not
+    margin
+        Margin to image edge.
+    name
+        Name of the output figure file.
+    output
+        Save the figure as file or not.
+    copy
+        Return a copy instead of writing to adata.
+
+    Returns
+    -------
+    Depending on `copy`, returns or updates `adata` with the following fields.
+    **tissue_area** : `adata.obs` field
+        Calculate the background pixels for each tiles
+    """
     colors = adata.obs["tissue_area"]
 
     if threshold is not None:
@@ -606,10 +673,14 @@ def thumbnail(img, size=(1000, 1000)):
 
 
 def scale_img(img, scale_f=10):
+    """Scales Pillow images to a different size
+    """
     return img.resize((img.size[0] // scale_f, img.size[1] // scale_f))
 
 
 def tissue_mask_grabcut(img):
+    """Masks the tissue region using cv2
+    """
     img_cv = img[:, :, ::-1]  # Convert RGB to BGR
     mask_initial = (np.array(Image.fromarray(img).convert('L')) < 250).astype(np.uint8)
 

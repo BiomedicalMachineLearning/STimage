@@ -63,8 +63,8 @@ if __name__ == "__main__":
             comm_genes = adata_all.var["mean_expression"].sort_values(ascending=False
                                                                       ).index[0:250]
 
-        if gene_selection == "HVG2000":
-            sc.pp.highly_variable_genes(adata_all, n_top_genes=2000)
+        if gene_selection == "HVG1000":
+            sc.pp.highly_variable_genes(adata_all, n_top_genes=1000)
             comm_genes = adata_all.var_names[adata_all.var.highly_variable]
         else:
             comm_genes = gene_selection
