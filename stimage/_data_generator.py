@@ -7,7 +7,9 @@ from sklearn.neighbors import KDTree
 
 
 class DataGenerator(keras.utils.Sequence):
-    'data generator for flat prediction model'
+    """
+    data generator for multiple branches gene prediction model
+    """
 
     def __init__(self, adata, dim=(299, 299), n_channels=3, genes=None, aug=False, tile_path="tile_path"):
         'Initialization'
@@ -61,7 +63,9 @@ class DataGenerator(keras.utils.Sequence):
 
 
 class DataGenerator_LSTM_one_output(keras.utils.Sequence):
-    'Generates data for Keras'
+    """
+    data generator for LSTM flat gene prediction model
+    """
 
     def __init__(self, adata, dim=(299, 299), n_channels=3, genes=None, aug=False):
         'Initialization'
@@ -131,7 +135,9 @@ class DataGenerator_LSTM_one_output(keras.utils.Sequence):
 
 
 class DataGenerator_LSTM_multi_output(keras.utils.Sequence):
-    'Generates data for Keras'
+    """
+    data generator for LSTM multiple branches gene prediction model
+    """
 
     def __init__(self, adata, dim=(299, 299), n_channels=3, genes=None, aug=False, tile_path="tile_path"):
         'Initialization'

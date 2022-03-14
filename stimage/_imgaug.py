@@ -53,21 +53,21 @@ seq_aug = iaa.Sequential(
     random_order=True
 )
 
-
-def tf_seq(image, label):
-    """
-
-    Parameters
-    ----------
-    image
-
-    label
-
-    Returns
-    -------
-
-    """
-    im_shape = image.shape
-    [image, ] = tf.py_function(lambda x: seq_aug(image=x), [image], [tf.float32])
-    image.set_shape(im_shape)
-    return image, label
+#
+# def tf_seq(image, label):
+#     """
+#
+#     Parameters
+#     ----------
+#     image
+#
+#     label
+#
+#     Returns
+#     -------
+#
+#     """
+#     im_shape = image.shape
+#     [image, ] = tf.py_function(lambda x: seq_aug(image=x), [image], [tf.float32])
+#     image.set_shape(im_shape)
+#     return image, label

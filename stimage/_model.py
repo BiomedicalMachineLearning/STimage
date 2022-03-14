@@ -173,13 +173,18 @@ def CNN_NB_trainable(tile_shape):
 
 def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     """
-    
+    STimage regression model.
+
     Parameters
     ----------
     tile_shape
+        The input tile shape
     n_genes
+        The number of genes to predict
     cnnbase
+        The convolutional neural network base for image feature extraction
     ft
+        option to fine tuning the model
 
     Returns
     -------
