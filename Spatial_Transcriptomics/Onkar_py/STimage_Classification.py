@@ -7,7 +7,6 @@ import numpy as np
 import zipfile
 import anndata
 import joblib
-from matplotlib import pyplot as plt
 import scipy as sp
 import seaborn as sns
 
