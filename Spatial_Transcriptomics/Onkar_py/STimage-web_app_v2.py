@@ -27,6 +27,7 @@ from sklearn.cluster import AgglomerativeClustering
 import scipy as sp; from scipy import ndimage as ndi; import time
 from skimage.feature import peak_local_max; from skimage.segmentation import watershed; from skimage.measure import label
 import skimage; from skimage.color import rgb2hed; from skimage.morphology import area_opening; from skimage.segmentation import mark_boundaries
+from lime import lime_tabular
 
 import zipfile
 import tempfile
@@ -62,18 +63,20 @@ title_container = st.container()
 col1, mid, col2 = st.columns([2, 2, 2])
 
 with title_container:
-        st.markdown('<h4 style="color: white;">Predicting Spatial Gene Expression Using Tissue Morphology and Spatial Transcriptomics',
+        st.write(""" ### Predicting Spatial Gene Expression Using Tissue Morphology and Spatial Transcriptomics""",
                             unsafe_allow_html=True)
         with mid:
-            st.markdown('<h5 style="color: lime;">Web-App STimage',
+            st.markdown('<h4 style="color: red;">Web-App STimage',
                                 unsafe_allow_html=True)
+            st.write('')
+            st.write('')
 
 @st.cache
 def model_predict_gene(gene):
     i = gene_list.index(gene)
     def combine_model_predict(tile1):
         feature1 = resnet_model.predict(tile1)
-        prediction = model_classifier.predict_proba(feature1)#[0]
+        prediction = model_c.predict_proba(feature1)#[0]
         return prediction[i]#.reshape(-1,1)
     return combine_model_predict
 
@@ -85,7 +88,7 @@ def model_predict_2gene(gene, tile2):
         feature1 = resnet_model.predict(tile1)
         feature2 = resnet_model.predict(tile2)
         feature = np.concatenate((feature1, feature2), axis=1)
-        prediction = model_classifier.predict_proba(feature)
+        prediction = model_c.predict_proba(feature)
         return prediction[i]
     return combine_model_predict2
 
@@ -142,13 +145,14 @@ def negative_binomial_loss(y_true, y_pred):
     )
     return nll
 #@st.cache
-def CNN_NB_multiple_genes(tile_shape, n_genes):
+def CNN_NB_multiple_genes(tile_shape, n_genes, ft=False):
     tile_input = Input(shape=tile_shape, name="tile_input")
-    resnet_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
-
-    for i in resnet_base.layers:
-        i.trainable = False
-    cnn = resnet_base.output
+    cnn_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
+    
+    if not ft:
+        for i in cnn_base.layers:
+            i.trainable = False
+    cnn = cnn_base.output
     cnn = GlobalAveragePooling2D()(cnn)
 
     output_layers = []
@@ -157,6 +161,9 @@ def CNN_NB_multiple_genes(tile_shape, n_genes):
         output_layers.append(Lambda(negative_binomial_layer, name="gene_{}".format(i))(output))
 
     model = Model(inputs=tile_input, outputs=output_layers)
+    optimizer = tf.keras.optimizers.Adam(1e-5)
+    model.compile(loss=negative_binomial_loss,
+                  optimizer=optimizer)
     return model
 
 @st.cache
@@ -186,7 +193,7 @@ if app_mode == "Tiling, Normalisation and Gene Expression Prediction":
 
 
     st.sidebar.write(" ------ ")
-    st.sidebar.warning("Enter config file for generating normalised tiles and predicting gene expression!")
+    st.sidebar.info("Enter config file for generating normalised tiles and predicting gene expression!")
 
     #st.write("""###### """)    
     config_file = st.file_uploader("Config File", type="ini")
@@ -197,15 +204,13 @@ if app_mode == "Tiling, Normalisation and Gene Expression Prediction":
     expander_norm.image(Image.open(Path+'Web_App/Stimage_web_app_data_norm.png'), caption='Data Augmentation and Normalisation',width=600)
     st.write("""""")
     
-        
-
     #%%
 if app_mode =="LIME":
 
     st.sidebar.warning("Upload Image Tile, the file of Trained Model and Enter Gene Names:")
 
     expander_lime = st.expander('LIME Model:')
-    expander_lime.image(Image.open(Path+'Web_App/Lime_Classification.png'), caption='STimage Team',width=600)
+    expander_lime.image(Image.open(Path+'Web_App/Lime_Classification.png'), caption='LIME model',width=600)
     
     #st.sidebar.subheader("Options")
 
@@ -226,15 +231,22 @@ if app_mode =="LIME":
     if lime_option == "Classification":    
 
         st.markdown("""
-                ## LIME Classification Model
+                ### LIME Classification Model
             """)
 
         resnet_model = ResNet50(weights="imagenet", include_top=False, input_shape=(299, 299, 3), pooling="avg")
 
-        uploaded_filenames = st.file_uploader('Choose the trained model pickle files:',accept_multiple_files=True)
-        for i in uploaded_filenames:
-            model_classifier = joblib.load(uploaded_filenames[i])
-            model_can_non_can = joblib.load(uploaded_filenames[i+1])
+        filename = st.file_uploader('Enter the path of saved model:')
+        if filename is not None:
+            model_c = joblib.load(filename)
+
+        filename_2 = st.file_uploader('Enter the path of saved model Cancer vs Non-Cancer:')
+        if filename_2 is not None:
+            model_can_v_non = joblib.load(filename_2)
+
+            gene_exp_names = ['CD74', 'CD24', 'CD63', 'CD81', 'CD151', 'COX6C', 'TP53', 'PABPC1', 
+            'GNAS', 'B2M', 'SPARC', 'HSP90AB1', 'TFF3', 'ATP1A1', 'FASN']
+            explainer_tabular = lime_tabular.LimeTabularExplainer(np.array(pd.read_csv(Path+'Output_files/Transformed_gene_exp.csv')), feature_names=gene_exp_names, class_names=['0','1'], mode='classification')
             
             gene_list = Top_500genes_train
             col4, col5 = st.columns(2)
@@ -244,50 +256,56 @@ if app_mode =="LIME":
             with col5:
                 user_input_2 = gene_list[1]#st.text_input("Enter Gene Name:", 'CD74')
             
-            st.success("Gene Specific Nuclei are being computed by LIME")
-            st.write(" ")
-            st.write("Gene1 and Gene2 are:      ", user_input, "  and   ", user_input_2 )
-            
-            st.markdown("""
-                            #### Watershed Segmentation for LIME
-                        """)
-
-            explainer = lime_image.LimeImageExplainer()
-            
-            
-            explanation_gene1 = explainer.explain_instance(image1_trans, model_predict_gene(user_input), top_labels=2, hide_color=0, num_samples=100, segmentation_fn=watershed_segment)
-            explanation_gene2 = explainer.explain_instance(image1_trans, model_predict_gene(user_input_2), top_labels=2, hide_color=0, num_samples=100, segmentation_fn=watershed_segment)
-
-        
-            col6, col7 = st.columns(2)
-        
-            with col6:
+            with st.spinner('Calculating...'):
+                st.write(" ")
                 
-                dict_heatmap1 = dict(explanation_gene1.local_exp[1])
-                heatmap1 = np.vectorize(dict_heatmap1.get)(explanation_gene1.segments) 
-                fig, ax = plt.subplots()
-                plt.imshow(image1_trans)
-                plt.imshow(heatmap1, alpha = 0.45, cmap = 'RdYlBu_r', vmin  = -heatmap1.max(), vmax = heatmap1.max())
-                st.write(fig)
-                plt.colorbar()
-                plt.show()
+                
+                st.markdown("""
+                                #### Watershed Segmentation for LIME
+                            """)
+
+                explainer = lime_image.LimeImageExplainer()
+                
+                
+                explanation_gene1 = explainer.explain_instance(image1_trans, model_predict_gene(user_input), top_labels=2, hide_color=0, num_samples=100, segmentation_fn=watershed_segment)
+                explanation_gene2 = explainer.explain_instance(image1_trans, model_predict_gene(user_input_2), top_labels=2, hide_color=0, num_samples=100, segmentation_fn=watershed_segment)
+
             
-            with col7:
+                col6, col7 = st.columns(2)
+            
+                with col6:
+                    st.write(user_input)
+                    dict_heatmap1 = dict(explanation_gene1.local_exp[1])
+                    heatmap1 = np.vectorize(dict_heatmap1.get)(explanation_gene1.segments) 
+                    fig, ax = plt.subplots()
+                    plt.imshow(image1_trans)
+                    plt.imshow(heatmap1, alpha = 0.45, cmap = 'RdYlBu_r', vmin  = -heatmap1.max(), vmax = heatmap1.max())
+                    st.write(fig)
+                    plt.colorbar()
+                    plt.show()
+                
+                with col7:
+                    st.write(user_input_2)
+                    dict_heatmap2 = dict(explanation_gene2.local_exp[1])
+                    heatmap2 = np.vectorize(dict_heatmap2.get)(explanation_gene2.segments) 
+                    fig, ax = plt.subplots()
+                    plt.imshow(image1_trans)
+                    plt.imshow(heatmap2, alpha = 0.45, cmap = 'RdYlBu_r', vmin  = -heatmap2.max(), vmax = heatmap2.max())
+                    st.write(fig)
+                    plt.colorbar()
+                    plt.show()
+                st.success("Gene Specific Nuclei were computed by LIME")
         
-                dict_heatmap2 = dict(explanation_gene2.local_exp[1])
-                heatmap2 = np.vectorize(dict_heatmap2.get)(explanation_gene2.segments) 
-                fig, ax = plt.subplots()
-                plt.imshow(image1_trans)
-                plt.imshow(heatmap2, alpha = 0.45, cmap = 'RdYlBu_r', vmin  = -heatmap2.max(), vmax = heatmap2.max())
-                st.write(fig)
-                plt.colorbar()
-                plt.show()
+            exp_tabular = explainer_tabular.explain_instance(data_row=model_c.predict(resnet_model(image1_trans.reshape(1,299,299,3)))[0], predict_fn=model_can_v_non.predict_proba)
+            components.html(exp_tabular.as_html())
+            #st.markdown(exp_tabular, unsafe_allow_html=True)
+            #exp_tabular.show_in_notebook(show_table=True)
 
 #%%
     if lime_option == "Regression":
 
         st.markdown("""
-                        ## LIME Regression Model
+                        ### LIME Regression Model
                     """)
 
         class PrinterCallback(tf.keras.callbacks.Callback):
@@ -302,8 +320,6 @@ if app_mode =="LIME":
                 print('STARTING EPOCH: {}'.format(epoch))
         
         
-        
-        
         filename = st.file_uploader('TF.Keras model file (.h5py.zip)', type='zip')#st.text_input('Enter the path of saved model weights:')
         if filename is not None:
             #st.warning("Enter h5-File Path")
@@ -316,7 +332,7 @@ if app_mode =="LIME":
                 #model = tf.keras.models.load_model(model_dir)
 
                 model_weights = model_dir
-                model = CNN_NB_multiple_genes((299, 299, 3), 8)
+                model = CNN_NB_multiple_genes((299, 299, 3), 14)
                 model.load_weights(model_weights)
                 model.compile(loss=negative_binomial_loss,
                             optimizer=tf.keras.optimizers.Adam(0.0001))
@@ -324,38 +340,52 @@ if app_mode =="LIME":
                 st.markdown("""
                         #### Watershed Segmentation for LIME
                     """)
-                    
-                col8, col9 = st.columns(2)         
-                    
-                explanation_gene1_reg = explainer.explain_instance(image1_trans, model_predict_gene_reg(user_input), 
-                                            top_labels=2, num_samples=100,
-                                            segmentation_fn=watershed_segment)
-                
-                explanation_gene2_reg = explainer.explain_instance(image1_trans, model_predict_gene_reg(user_input_2), 
-                                            top_labels=2, num_samples=100,
-                                            segmentation_fn=watershed_segment)
-                    
-                with col8:
-                    
-                    dict_heatmap1 = dict(explanation_gene1_reg.local_exp[explanation_gene1_reg.top_labels[0]])
-                    heatmap1 = np.vectorize(dict_heatmap1.get)(explanation_gene1_reg.segments) 
-                    fig, ax = plt.subplots()
-                    plt.imshow(image1_trans)
-                    plt.imshow(heatmap1, alpha = 0.45, cmap = 'RdBu', vmin  = -heatmap1.max(), vmax = heatmap1.max())
-                    st.write(fig)
-                    plt.colorbar()
-                    plt.show()
-                
-                with col9:
             
-                    dict_heatmap2 = dict(explanation_gene2_reg.local_exp[explanation_gene2_reg.top_labels[0]])
-                    heatmap2 = np.vectorize(dict_heatmap2.get)(explanation_gene2_reg.segments) 
-                    fig, ax = plt.subplots()
-                    plt.imshow(image1_trans)
-                    plt.imshow(heatmap2, alpha = 0.45, cmap = 'RdBu', vmin  = -heatmap2.max(), vmax = heatmap2.max())
-                    st.write(fig)
-                    plt.colorbar()
-                    plt.show()
+                gene_list = Top_500genes_train
+
+                col8, col9 = st.columns(2)
+                
+                with col8:
+                    user_input = gene_list[0]#st.text_input("Enter Gene Name:", 'COX6C')
+                    
+                with col9:
+                    user_input_2 = gene_list[1]#st.text_input("Enter Gene Name:", 'CD74')
+
+                with st.spinner('Calculating...'):
+                    col10, col11 = st.columns(2)         
+                    explainer = lime_image.LimeImageExplainer()
+
+                    explanation_gene1_reg = explainer.explain_instance(image1_trans, model_predict_gene_reg(user_input), 
+                                                top_labels=1, num_samples=100,
+                                                segmentation_fn=watershed_segment)
+                    
+                    explanation_gene2_reg = explainer.explain_instance(image1_trans, model_predict_gene_reg(user_input_2), 
+                                                top_labels=1, num_samples=100,
+                                                segmentation_fn=watershed_segment)
+
+                        
+                    with col10:
+                        st.write(user_input)
+                        dict_heatmap1 = dict(explanation_gene1_reg.local_exp[explanation_gene1_reg.top_labels[0]])
+                        heatmap1 = np.vectorize(dict_heatmap1.get)(explanation_gene1_reg.segments) 
+                        fig, ax = plt.subplots()
+                        plt.imshow(image1_trans)
+                        plt.imshow(heatmap1, alpha = 0.25, cmap = 'RdYlBu_r', vmin  = -heatmap1.max(), vmax = heatmap1.max())
+                        st.write(fig)
+                        plt.colorbar()
+                        plt.show()
+                    
+                    with col11:
+                        st.write(user_input_2)
+                        dict_heatmap2 = dict(explanation_gene2_reg.local_exp[explanation_gene2_reg.top_labels[0]])
+                        heatmap2 = np.vectorize(dict_heatmap2.get)(explanation_gene2_reg.segments) 
+                        fig, ax = plt.subplots()
+                        plt.imshow(image1_trans)
+                        plt.imshow(heatmap2, alpha = 0.25, cmap = 'RdYlBu_r', vmin  = -heatmap2.max(), vmax = heatmap2.max())
+                        st.write(fig)
+                        plt.colorbar()
+                        plt.show()
+                    st.success("Gene Specific Nuclei were computed by LIME")
 
 
 
