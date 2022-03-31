@@ -4,19 +4,20 @@ import h5py; from pathlib import Path; import pickle; import tensorflow as tf; i
 import PIL; from PIL import Image; PIL.Image.MAX_IMAGE_PIXELS = 933120000
 from io import StringIO
 
-import shap; shap.initjs(); import lime; from lime import lime_image; import lime.lime_tabular
+import shap; shap.initjs(); import lime; from lime import lime_image; from lime import lime_tabular
+
 import stlearn; from tqdm import tqdm; import math
 import plotly.express as px; import matplotlib.pyplot as plt; from matplotlib import cm as cm
 import cv2; import joblib; from sklearn.metrics import confusion_matrix; import seaborn as sns
 
 from tensorflow import keras; #from tensorflow.keras.utils import np_utils
 from tensorflow.keras.models import Sequential, load_model, Model
-from tensorflow.keras.applications import VGG16, ResNet50, inception_v3, DenseNet121
-from tensorflow.keras.applications import imagenet_utils; from tensorflow.keras.callbacks import ModelCheckpoint
-from tensorflow.keras.preprocessing import image as load_img; from tensorflow.keras.preprocessing.image import img_to_array, load_img
+from tensorflow.keras.applications import VGG16, ResNet50, inception_v3, DenseNet121, imagenet_utils
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Flatten, GlobalAveragePooling2D, BatchNormalization, Input, Lambda
 from tensorflow.keras.preprocessing import image as image_fun
-from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input as pi;
+#from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input as pi;
 
 from sklearn import preprocessing
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer; 
@@ -27,7 +28,6 @@ from sklearn.cluster import AgglomerativeClustering
 import scipy as sp; from scipy import ndimage as ndi; import time
 from skimage.feature import peak_local_max; from skimage.segmentation import watershed; from skimage.measure import label
 import skimage; from skimage.color import rgb2hed; from skimage.morphology import area_opening; from skimage.segmentation import mark_boundaries
-from lime import lime_tabular
 
 import zipfile
 import tempfile
