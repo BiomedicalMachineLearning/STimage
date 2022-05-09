@@ -120,9 +120,8 @@ def clustering(Path,gene_exp_binary,train_data_library_id,pred_gexp):
                                                           clustering.fit_predict(gene_exp_binary.loc[(gene_exp_binary['dataset'] == train_data_library_id)].iloc[:,:-1]))
     joblib.dump(clf_can_v_non_can, Path+'resnet_block1_log_scaled_relu_clustering_logistic.pkl')
     clf_can_v_non_can = joblib.load(Path+'resnet_block1_log_scaled_relu_clustering_logistic.pkl')
-    can_v_non_can_spot = pd.DataFrame(clf_can_v_non_can.predict(pred_gexp.iloc[:,:-1]))
-    can_v_non_can_spot['dataset'] = list(pred_gexp['dataset'])
-    return can_v_non_can_spot
+    #can_v_non_can_spot = pd.DataFrame(clf_can_v_non_can.predict(pred_gexp.iloc[:,:-1]))
+    Binarized_gene_exp = pd.DataFrame(gene_exp_binary.loc[(gene_exp_binary['dataset'] == train_data_library_id)]).to_csv(Path+"Binarized_gene_exp_train.csv")
 
 
 
