@@ -53,17 +53,17 @@ if __name__ == "__main__":
                           "ATP1A1", "COX6C", "B2M", "FASN",
                           "ACTG1", "HLA-B"]
 
-        if gene_selection == "markers":
+        elif gene_selection == "markers":
             comm_genes = ["SLITRK6", "PGM5", "LINC00645",
                           "TTLL12", "COX6C", "CPB1",
                           "KRT5", "MALAT1"]
 
-        if gene_selection == "top250":
+        elif gene_selection == "top250":
             adata_all.var["mean_expression"] = np.mean(adata_all.X, axis=0)
             comm_genes = adata_all.var["mean_expression"].sort_values(ascending=False
                                                                       ).index[0:250]
 
-        if gene_selection == "HVG1000":
+        elif gene_selection == "HVG1000":
             sc.pp.highly_variable_genes(adata_all, n_top_genes=1000)
             comm_genes = adata_all.var_names[adata_all.var.highly_variable]
         else:
