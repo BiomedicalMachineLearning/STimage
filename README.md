@@ -102,6 +102,9 @@ Observed expression of gene *TTLL12* | Predicted  expression of gene *TTLL12*
 ![plot](./plots/spatial_autocorrelation_1.png)
 ![plot](./plots/spatial_autocorrelation_2.png)
 
+### interactive webtool
+
+This [interactive webtool](https://share.streamlit.io/onkarmulay/stimage-lime-web-app/main/STimage-web_app.py) will allow you to upload your own image to predict the gene expression and visualize the model performance and interpretation. 
 
 ## Citing STimage
 
