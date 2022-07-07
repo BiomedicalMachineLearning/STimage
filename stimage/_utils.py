@@ -732,3 +732,12 @@ def filter_grays(img, tolerance=3):
     img_filtered = img.copy()
     img_filtered.paste(white_image, mask=grays_mask)
     return img_filtered
+
+
+def classification_preprocessing(anndata):
+    gene_exp = anndata.to_df()
+    gene_exp['library_id'] = anndata.obs['library_id']
+    gene_exp_zscore = gene_exp.groupby('library_id')[list(gene_exp.iloc[:,:-1].columns)].apply(lambda x: (x-x.mean())/(x.std()))
+    anndata.obsm["true_gene_expression"] = pd.DataFrame(gene_exp_zscore.apply(lambda x: [0 if y <= 0 else 1 for y in x]),
+                                                       columns = anndata.to_df().columns, index = anndata.obs.index)
+

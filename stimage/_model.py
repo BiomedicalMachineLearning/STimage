@@ -8,6 +8,14 @@ from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, Dropout, Lambda
 from tensorflow.keras.models import Model
+from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
+from sklearn.neural_network import MLPClassifier
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from matplotlib import pyplot as plt
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+import joblib
 
 
 class PrinterCallback(tf.keras.callbacks.Callback):
@@ -230,3 +238,26 @@ def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     model.compile(loss=negative_binomial_loss,
                   optimizer=optimizer)
     return model
+
+
+#Computing ResNet50 features
+def ResNet50_features(anndata):
+    resnet_features = []
+    pre_model = ResNet50(weights='imagenet', pooling="avg", include_top = False)
+    for imagePath in anndata.obs["tile_path"]:
+        image = plt.imread(imagePath).astype('float32')
+        image = np.expand_dims(image, axis=0)
+        image = preprocess_input(image)
+        resnet_features.append(pre_model.predict(image, batch_size=1))
+
+    #Shape of resnet50 features is coming out as (no. of tiles, 1, no. of resnet features)
+    resnet_features = np.asarray(resnet_features)
+    anndata.obsm["resnet50_features"] = resnet_features.reshape(resnet_features.shape[0],resnet_features.shape[2])
+
+
+#Logistic Regression Classifier
+def LR_model(train_adata, iteration=10000, penalty_option="elasticnet", regularization_strength=0.1, optimization="saga", l1_l2_ratio=0.5, path=None):
+    model_c = LogisticRegression(max_iter=iteration, penalty=penalty_option, C=regularization_strength,solver=optimization,l1_ratio=l1_l2_ratio)
+    clf_resnet = MultiOutputClassifier(model_c).fit(train_adata.obsm["resnet50_features"], train_adata.obsm["true_gene_expression"])
+    joblib.dump(clf_resnet, path+'pickle/LRmodel.pkl')
+

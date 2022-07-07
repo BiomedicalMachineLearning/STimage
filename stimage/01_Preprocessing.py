@@ -11,7 +11,8 @@ from PIL import Image
 # sys.path.append(str(parent))
 # print(parent)
 from _img_normaliser import IterativeNormaliser
-from _utils import tiling, ensembl_to_id, ReadOldST, Read10X, scale_img, calculate_bg
+from _model import ResNet50_features
+from _utils import tiling, ensembl_to_id, ReadOldST, Read10X, scale_img, calculate_bg, classification_preprocessing
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="STimage software --- Preprocessing")
@@ -21,6 +22,7 @@ if __name__ == "__main__":
 
     config = configparser.ConfigParser()
     config.read(args.config)
+    model_name = config["TRAINING"]["model_name"]
     normalization = config["DATASET"]["normalization"]
     META_PATH = Path(config["PATH"]["METADATA_PATH"])
     DATA_PATH = Path(config["PATH"]["DATA_PATH"])
@@ -64,6 +66,8 @@ if __name__ == "__main__":
                                 library_id=Sample,
                                 source_image_path=img_path,
                                 quality="fulres")
+            else:
+                raise Exception("Only Old_ST and Visium data are supported")
 
             if stain_normalization and Sample == template_sample:
                 print("fitting template image for stain normalizer")
@@ -75,7 +79,9 @@ if __name__ == "__main__":
 
             if normalization == "log":
                 st.pp.log1p(adata)
-
+            if model_name == "classification":
+                classification_preprocessing(adata)
+                ResNet50_features(adata)
             adata_list.append(adata)
 
         for i, adata in enumerate(adata_list):

@@ -1,7 +1,7 @@
 import argparse
 import configparser
 from pathlib import Path
-
+import joblib
 import numpy as np
 import tensorflow as tf
 from _data_generator import DataGenerator
@@ -56,7 +56,13 @@ if __name__ == "__main__":
             y_pred = nbinom.mean(n, p)
             y_preds.append(y_pred)
         test_adata.obsm["predicted_gene"] = np.array(y_preds).transpose()
+    elif model_name == "classification":
+        clf_resnet = joblib.load(OUT_PATH +'pickle/LRmodel.pkl')
+        test_adata.obsm["predicted_gene_expression"] = clf_resnet.predict(test_adata.obsm["resnet50_features"])
+
+
 
     test_adata_ = test_adata.copy()
     test_adata_.X = test_adata_.obsm["predicted_gene"]
+
     test_adata_.write(OUT_PATH / "prediction.h5ad")

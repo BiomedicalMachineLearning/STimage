@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from _data_generator import DataGenerator
-from _model import CNN_NB_multiple_genes, PrinterCallback
+from _model import CNN_NB_multiple_genes, PrinterCallback, LR_model
 from anndata import read_h5ad
 import scanpy as sc
 
@@ -116,19 +116,21 @@ if __name__ == "__main__":
     if model_name == "NB_regression":
         model = CNN_NB_multiple_genes((tile_size, tile_size, 3), n_genes, cnnbase=cnn_base, ft=fine_tuning)
 
-    callbacks = [PrinterCallback()]
-    # callbacks = []
-    if early_stop:
-        callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10,
+        callbacks = [PrinterCallback()]
+        # callbacks = []
+        if early_stop:
+            callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10,
                                                           restore_best_weights=True))
 
-    train_history = model.fit(train_gen_,
+        train_history = model.fit(train_gen_,
                               validation_data=valid_gen_,
                               epochs=epochs,
                               callbacks=callbacks,
                               verbose=0)
-    if save_train_history:
-        with open(OUT_PATH / "training_history.pkl", "wb") as file:
-            pickle.dump(train_history.history, file)
-    if save_model_weights:
-        model.save(OUT_PATH / "model_weights.h5")
+        if save_train_history:
+            with open(OUT_PATH / "training_history.pkl", "wb") as file:
+                pickle.dump(train_history.history, file)
+        if save_model_weights:
+            model.save(OUT_PATH / "model_weights.h5")
+    elif model_name == "classification":
+        LR_model(train_adata)
