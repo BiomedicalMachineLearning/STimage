@@ -114,13 +114,11 @@ if __name__ == "__main__":
     DATA_PATH = Path(config["PATH"]["DATA_PATH"])
     OUT_PATH.mkdir(parents=True, exist_ok=True)
 
-    if gene_selection == "tumour":
-        comm_genes = ["PABPC1", "GNAS", "HSP90AB1", "TFF3",
-                      "ATP1A1", "COX6C", "B2M", "FASN",
-                      "ACTG1", "HLA-B"]
+    test_adata = read_h5ad(DATA_PATH / "prediction.h5ad")
+
+    comm_genes = test_adata.var_names
     n_genes = len(comm_genes)
 
-    test_adata = read_h5ad(DATA_PATH / "prediction.h5ad")
     prediction_adata = test_adata.copy()
     prediction_adata.X = prediction_adata.obsm["predicted_gene"]
     test_library = prediction_adata.obs["library_id"].unique()

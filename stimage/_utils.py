@@ -8,6 +8,10 @@ from matplotlib import pyplot as plt
 
 # from .utils import get_img_from_fig, checkType
 
+from PIL import Image
+
+# from .utils import get_img_from_fig, checkType
+
 
 def gene_plot(
         adata: AnnData,
@@ -25,6 +29,7 @@ def gene_plot(
         show_color_bar: bool = True,
         show_axis: bool = False,
         cropped: bool = True,
+        image_scale: int= None,
         margin: int = 100,
         name: str = None,
         output: str = None,
@@ -86,8 +91,12 @@ def gene_plot(
 
     filter_obs = adata.obs.loc[index_filter]
 
-    imagecol = filter_obs["imagecol"]
-    imagerow = filter_obs["imagerow"]
+    scale_factor = 1
+    if image_scale:
+        scale_factor = 1 / image_scale
+
+    imagecol = filter_obs["imagecol"] * scale_factor
+    imagerow = filter_obs["imagerow"] * scale_factor
 
     # Option for turning off showing figure
     plt.ioff()
@@ -118,12 +127,16 @@ def gene_plot(
         library_id = list(adata.uns["spatial"].keys())[0]
 
     image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
+    scale_size = (image.shape[1]* scale_factor, image.shape[0]* scale_factor)
+    image_pil = Image.fromarray(image)
+    image_pil.thumbnail(scale_size, Image.ANTIALIAS)
+    image = np.array(image_pil)
     # Overlay the tissue image
     a.imshow(image, alpha=tissue_alpha, zorder=-1, )
 
     if cropped:
-        imagecol = adata.obs["imagecol"]
-        imagerow = adata.obs["imagerow"]
+        imagecol = adata.obs["imagecol"] * scale_factor
+        imagerow = adata.obs["imagerow"] * scale_factor
 
         a.set_xlim(imagecol.min() - margin,
                    imagecol.max() + margin)

@@ -214,7 +214,7 @@ def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     #     stage_5_start = resnet_base.get_layer("conv5_block1_1_conv")
     #     for i in range(resnet_base.layers.index(stage_5_start)):
     #         resnet_base.layers[i].trainable = False
-
+    cnn_base = None
     if not ft:
         for i in cnn_base.layers:
             i.trainable = False
