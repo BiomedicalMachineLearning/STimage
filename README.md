@@ -4,9 +4,12 @@
 
 ## Description
 
+We developed STimage, a deep-learning framework to train on few spatial transcriptomics data and classify and estimate gene expression. The STimage classification model predicts the presence/absence, high/low expression of a gene or a group of genes, while the regression model predicts continuous expression values of one or more genes. Different to existing models, STimage estimates Negative Binomial parameters of gene expression distribution rather than a fixed data point, allowing the assessment of prediction confidence. The model interpretation was assessed by scoring feature importance at a single-cell level. The model performance was also evaluated using an independent, non-spatial imaging dataset, showing results consistent with pathological annotation. STimage addresses key technical limitations to enable the integration of spatial transcriptomics data and deep learning into the current pathological workflow to help doctors better analyse patient samples.
 
 ## Installation
-
+```
+git clone https://github.com/BiomedicalMachineLearning/STimage.git
+```
 ## Usage
 
 ### Data 
