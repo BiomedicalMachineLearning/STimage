@@ -1,6 +1,6 @@
 # STimage - *I*nterpretable *M*achine learning *A*pplication for *G*ene *E*xpression prediction using Spatial Transcriptomics data
 
-![plot](./plots/Figure1.png)
+![plot](./plots/model.png)
 
 ## Description
 
