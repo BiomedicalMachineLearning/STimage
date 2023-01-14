@@ -107,7 +107,7 @@ Observed expression of gene *TTLL12* | Predicted  expression of gene *TTLL12*
 
 ### interactive webtool
 
-This [interactive webtool](https://share.streamlit.io/onkarmulay/stimage-lime-web-app/main/STimage-web_app.py) will allow you to upload your own image to predict the gene expression and visualize the model performance and interpretation. 
+This [interactive webtool](https://onkarmulay-stimage-lime-web-app-stimage-web-app-h8w8vx.streamlit.app/) will allow you to upload your own image to predict the gene expression and visualize the model performance and interpretation. 
 
 ## Citing STimage
 
