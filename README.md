@@ -1,4 +1,5 @@
 # STimage - *I*nterpretable *M*achine learning *A*pplication for *G*ene *E*xpression prediction using Spatial Transcriptomics data
+STimage: using small spatial datasets to train robust prediction models of cancer and immune genes from histopathological images
 
 ![plot](./plots/model.png)
 
