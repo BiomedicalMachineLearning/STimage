@@ -199,6 +199,7 @@ def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
 
     """
     tile_input = Input(shape=tile_shape, name="tile_input")
+    cnn_base = None
     if cnnbase == "resnet50":
         cnn_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
     elif cnnbase == "vgg16":
@@ -214,7 +215,7 @@ def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     #     stage_5_start = resnet_base.get_layer("conv5_block1_1_conv")
     #     for i in range(resnet_base.layers.index(stage_5_start)):
     #         resnet_base.layers[i].trainable = False
-    cnn_base = None
+    
     if not ft:
         for i in cnn_base.layers:
             i.trainable = False

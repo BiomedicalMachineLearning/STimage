@@ -2,7 +2,7 @@ import numpy as np
 from tensorflow import keras
 from tensorflow.keras.applications.resnet50 import preprocess_input as preprocess_resnet
 from tensorflow.keras.preprocessing import image
-from _imgaug import seq_aug
+from ._imgaug import seq_aug
 from sklearn.neighbors import KDTree
 
 
