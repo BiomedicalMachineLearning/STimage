@@ -107,9 +107,9 @@ callback = tf.keras.callbacks.EarlyStopping(
 # train model
 with tf.device("GPU:0"):
     train_history = model.fit(train_gen_,
-                              epochs=50,
+                              epochs=100,
                               validation_data=valid_gen_,
                               callbacks=[callback]
                               )
 
-model.save(OUT_PATH / f"resnet50_{job_id}.h5")
+model.save(OUT_PATH / f"resnet50_{job_id}-rev1.h5")
