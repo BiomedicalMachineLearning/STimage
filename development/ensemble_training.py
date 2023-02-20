@@ -100,10 +100,11 @@ test_gen__2 = test_gen_2.batch(1)
 K.clear_session()
 model = CNN_NB_multiple_genes((299, 299, 3), n_genes, cnnbase="resnet50")
 callback = tf.keras.callbacks.EarlyStopping(
-    monitor='val_loss', patience=20,
-    restore_best_weights=False
+    monitor='val_loss', patience=10,
+    restore_best_weights=True
 )
-
+lr_ = 1e-4 # change the learning rate to improve results
+model.optimizer.learning_rate.assign(lr_)
 # train model
 with tf.device("GPU:0"):
     train_history = model.fit(train_gen_,
@@ -112,4 +113,4 @@ with tf.device("GPU:0"):
                               callbacks=[callback]
                               )
 
-model.save(OUT_PATH / f"resnet50_{job_id}-rev1.h5")
+model.save(OUT_PATH / f"resnet50_{job_id}-rev2.h5")
