@@ -1,7 +1,3 @@
-[TOC]
-
-
-
 # Dataset Availability
 
 We have 3 samples from Pfizer. We use 1302A and 1956A as training samples, 4851A as testing sample.
@@ -73,11 +69,11 @@ We have 3 samples from Pfizer. We use 1302A and 1956A as training samples, 4851A
 
 #### Cell Area by Cell Types across Slides
 
-![AGG Cell Area by Slides across Cell Types](Figures/AGG Cell Area by Slides across Cell Types.png)
+![Cell Area by Slides across Cell Types](Figures/AGG-Cell-Area-by-Slides-across-Cell-Types.png)
 
 #### Cell Area by Slides across Cell Types 
 
-![AGG Cell Area by Cell Types across Slides](Figures/AGG Cell Area by Cell Types across Slides.png)
+![Cell Area by Cell Types across Slides](Figures/AGG-Cell-Area-by-Cell-Types-across-Slides.png)
 
 
 ### 
@@ -90,7 +86,7 @@ We have 3 samples from Pfizer. We use 1302A and 1956A as training samples, 4851A
 
 
 
-![AGG Number of genes detected](Figures/AGG Number of genes detected.png)
+![AGG Number of genes detected](Figures/AGG-Number-of-genes-detected.png)
 
 
 
