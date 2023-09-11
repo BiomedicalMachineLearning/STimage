@@ -69,6 +69,16 @@ We have 3 samples from Pfizer. We use 1302A and 1956A as training samples, 4851A
 ![CellArea4851A](Figures/CellArea-4851A.png)
 
 
+### Statistical Information (Group Analysis)
+
+#### Cell Area by Cell Types across Slides
+
+![AGG Cell Area by Slides across Cell Types](Figures/AGG Cell Area by Slides across Cell Types.png)
+
+#### Cell Area by Slides across Cell Types 
+
+![AGG Cell Area by Cell Types across Slides](Figures/AGG Cell Area by Cell Types across Slides.png)
+
 
 ### 
 
@@ -100,7 +110,7 @@ Threshold=
 
 
 
-## Remove the tiles with outlier cell area.
+## Remove the tiles with the outlier cell area.
 
 Threshold=
 
