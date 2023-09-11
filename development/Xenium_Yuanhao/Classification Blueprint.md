@@ -10,19 +10,19 @@ We have 3 samples from Pfizer. We use 1302A and 1956A as training samples, 4851A
 
 ## 1302A
 
-![1302A](/Users/yuanhaojiang/Documents/Xenium Project/Figures/1302A.png)
+![1302A](Figures/1302A.png)
 
 ## 1956A 
 
-![1956A](/Users/yuanhaojiang/Documents/Xenium Project/Figures/1956A.png)
+![1956A](Figures/1956A.png)
 
 ## 4851A
 
-![4851A](/Users/yuanhaojiang/Documents/Xenium Project/Figures/4851A.png)
+![4851A](Figures/4851A.png)
 
 # Exploratory data analysis
 
-* Different view for different crop size.
+* Different views for different crop sizes.
 
 * Cell Type Distribution
 
@@ -32,41 +32,41 @@ We have 3 samples from Pfizer. We use 1302A and 1956A as training samples, 4851A
 
   
 
-## Different view for different crop size.
+## Different views for different crop sizes.
 
 **Tile size=32**
 
-![crop size 16](/Users/yuanhaojiang/Documents/Xenium Project/Figures/crop_r16.png)
+![crop size 16](Figures/crop_r16.png)
 
 **Tile size=64**
 
-![crop size 32](/Users/yuanhaojiang/Documents/Xenium Project/Figures/crop_r32.png)
+![crop size 32](Figures/crop_r32.png)
 
 **Tile size=96**
 
-![crop size 48](/Users/yuanhaojiang/Documents/Xenium Project/Figures/crop_r48.png)
+![crop size 48](Figures/crop_r48.png)
 
 ## Cell Type Distribution
 
-![CellTypeDistribution](/Users/yuanhaojiang/Documents/Xenium Project/Figures/CellTypeDistribution.png)
+![CellTypeDistribution](Figures/CellTypeDistribution.png)
 
 ## Cell Area Distribution
 
 ### 1302A
 
-![CellArea4851A](/Users/yuanhaojiang/Documents/Xenium Project/Figures/CellArea-1302A.png)
+![CellArea4851A](Figures/CellArea-1302A.png)
 
 
 
 ### 1956A
 
-![CellArea1956A](/Users/yuanhaojiang/Documents/Xenium Project/Figures/CellArea-1956A.png)
+![CellArea1956A](Figures/CellArea-1956A.png)
 
 
 
 ### 4851A
 
-![CellArea4851A](/Users/yuanhaojiang/Documents/Xenium Project/Figures/CellArea-4851A.png)
+![CellArea4851A](Figures/CellArea-4851A.png)
 
 
 
@@ -80,7 +80,7 @@ We have 3 samples from Pfizer. We use 1302A and 1956A as training samples, 4851A
 
 
 
-![AGG Number of genes detected](/Users/yuanhaojiang/Downloads/AGG Number of genes detected.png)
+![AGG Number of genes detected](Figures/AGG Number of genes detected.png)
 
 
 
@@ -154,10 +154,10 @@ Threshold=
 
 # Data Augmentation
 
-* Gemetric Transformation
+* Geometric Transformation
 * Color Transformation
 
-## Gemetric Transformation
+## Geometric Transformation
 
 ### Flipping
 
@@ -209,11 +209,11 @@ Reinhard normalization
 
 ### CLIP ML Model
 
-![CLIPFC](/Users/yuanhaojiang/Documents/Xenium Project/Figures/CLIP_FC.png)
+![CLIPFC](Figures/CLIP_FC.png)
 
 ### CLIP FC Model (FineTune Image Encoder)
 
-![CLIPFC](/Users/yuanhaojiang/Documents/Xenium Project/Figures/CLIP_FC.png)
+![CLIPFC](Figures/CLIP_FC.png)
 
 
 
@@ -226,7 +226,7 @@ Reinhard normalization
 Drawbacks:
 
 * Can not finetune image encoder during training machine learning models.
-* Sklearn based machine learning model can not use CUDA to speed up training process.
+* Sklearn-based machine learning model can not use CUDA to speed up the training process.
 
 
 
@@ -234,8 +234,8 @@ Drawbacks:
 
 Benefits:
 
-* Contrastive learning can align the latent space between H&E image and gene expression. Image encoder can learn some features from gene expression.
-* Finetune the image encoder during supervised training can make the image encoder more label oriented.
+* Contrastive learning can align the latent space between the H&E image and gene expression. Image encoders can learn some features from gene expression.
+* Finetuning the image encoder during supervised training can make the image encoder more label-oriented.
 
 ## Multi-modal fusion
 
@@ -249,7 +249,7 @@ Feature Fusion Methods:
 
 * Concatenation Attention
 
-![Multi modal fusion](/Users/yuanhaojiang/Documents/Xenium Project/Figures/Multi modal fusion.png)
+![Multi modal fusion](Figures/Multi modal fusion.png)
 
 ### Summation
 
@@ -300,5 +300,5 @@ https://captum.ai/tutorials/Resnet_TorchVision_Ablation
 
 **Pending**
 $$
-Uncertatinty Score = 1 - Prediction Probability
+Uncertainty Score = 1 - Prediction Probability
 $$
