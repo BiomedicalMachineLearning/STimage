@@ -5,8 +5,6 @@ import slideio
 from pathlib import Path
 import pandas as pd
 from anndata import AnnData, read_h5ad
-import stlearn as st
-st.settings.set_figure_params(dpi=300)
 from PIL import Image
 from stimage._img_normaliser import IterativeNormaliser
 from stimage._utils import gene_plot,  tiling, scale_img, calculate_bg

@@ -2,9 +2,8 @@ import argparse
 import configparser
 import sys
 from pathlib import Path
-
+import scanpy as sc
 import pandas as pd
-import stlearn as st
 from PIL import Image
 # file=Path("./stimage").resolve()
 # parent=file.parent
@@ -78,7 +77,7 @@ if __name__ == "__main__":
                 normaliser.fit_target(scale_img(template_img))
 
             if normalization == "log":
-                st.pp.log1p(adata)
+                sc.pp.log1p(adata)
             if model_name == "classification":
                 classification_preprocessing(adata)
                 ResNet50_features(adata)
