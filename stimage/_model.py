@@ -22,6 +22,7 @@ class PrinterCallback(tf.keras.callbacks.Callback):
     """
     reformat the output at each epoch begin and end.
     """
+
     def on_epoch_end(self, epoch, logs=None):
         print('EPOCH: {}, Train Loss: {}, Val Loss: {}'.format(epoch,
                                                                logs['loss'],
@@ -103,14 +104,15 @@ def negative_binomial_loss(y_true, y_pred):
 
     # Calculate the negative log likelihood
     nll = (
-            tf.math.lgamma(n)
-            + tf.math.lgamma(y_true + 1)
-            - tf.math.lgamma(n + y_true)
-            - n * tf.math.log(p)
-            - y_true * tf.math.log(1 - p)
+        tf.math.lgamma(n)
+        + tf.math.lgamma(y_true + 1)
+        - tf.math.lgamma(n + y_true)
+        - n * tf.math.log(p)
+        - y_true * tf.math.log(1 - p)
     )
 
     return nll
+
 
 """
 def CNN_NB_model():
@@ -201,21 +203,27 @@ def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     tile_input = Input(shape=tile_shape, name="tile_input")
     cnn_base = None
     if cnnbase == "resnet50":
-        cnn_base = ResNet50(input_tensor=tile_input, weights='imagenet', include_top=False)
+        cnn_base = ResNet50(input_tensor=tile_input,
+                            weights='imagenet', include_top=False)
     elif cnnbase == "vgg16":
-        cnn_base = VGG16(input_tensor=tile_input, weights='imagenet', include_top=False)
+        cnn_base = VGG16(input_tensor=tile_input,
+                         weights='imagenet', include_top=False)
     elif cnnbase == "inceptionv3":
-        cnn_base = InceptionV3(input_tensor=tile_input, weights='imagenet', include_top=False)
+        cnn_base = InceptionV3(input_tensor=tile_input,
+                               weights='imagenet', include_top=False)
     elif cnnbase == "mobilenetv2":
-        cnn_base = MobileNetV2(input_tensor=tile_input, weights='imagenet', include_top=False)
+        cnn_base = MobileNetV2(input_tensor=tile_input,
+                               weights='imagenet', include_top=False)
     elif cnnbase == "densenet121":
-        cnn_base = DenseNet121(input_tensor=tile_input, weights='imagenet', include_top=False)
+        cnn_base = DenseNet121(input_tensor=tile_input,
+                               weights='imagenet', include_top=False)
     elif cnnbase == "xception":
-        cnn_base = Xception(input_tensor=tile_input, weights='imagenet', include_top=False)
+        cnn_base = Xception(input_tensor=tile_input,
+                            weights='imagenet', include_top=False)
     #     stage_5_start = resnet_base.get_layer("conv5_block1_1_conv")
     #     for i in range(resnet_base.layers.index(stage_5_start)):
     #         resnet_base.layers[i].trainable = False
-    
+
     if not ft:
         for i in cnn_base.layers:
             i.trainable = False
@@ -228,7 +236,8 @@ def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     output_layers = []
     for i in range(n_genes):
         output = Dense(2)(cnn)
-        output_layers.append(Lambda(negative_binomial_layer, name="gene_{}".format(i))(output))
+        output_layers.append(
+            Lambda(negative_binomial_layer, name="gene_{}".format(i))(output))
 
     model = Model(inputs=tile_input, outputs=output_layers)
     #     losses={}
@@ -241,24 +250,26 @@ def CNN_NB_multiple_genes(tile_shape, n_genes, cnnbase="resnet50", ft=False):
     return model
 
 
-#Computing ResNet50 features
+# Computing ResNet50 features
 def ResNet50_features(anndata):
     resnet_features = []
-    pre_model = ResNet50(weights='imagenet', pooling="avg", include_top = False)
+    pre_model = ResNet50(weights='imagenet', pooling="avg", include_top=False)
     for imagePath in anndata.obs["tile_path"]:
         image = plt.imread(imagePath).astype('float32')
         image = np.expand_dims(image, axis=0)
         image = preprocess_input(image)
         resnet_features.append(pre_model.predict(image, batch_size=1))
 
-    #Shape of resnet50 features is coming out as (no. of tiles, 1, no. of resnet features)
+    # Shape of resnet50 features is coming out as (no. of tiles, 1, no. of resnet features)
     resnet_features = np.asarray(resnet_features)
-    anndata.obsm["resnet50_features"] = resnet_features.reshape(resnet_features.shape[0],resnet_features.shape[2])
+    anndata.obsm["resnet50_features"] = resnet_features.reshape(
+        resnet_features.shape[0], resnet_features.shape[2])
 
 
-#Logistic Regression Classifier
+# Logistic Regression Classifier
 def LR_model(train_adata, iteration=10000, penalty_option="elasticnet", regularization_strength=0.1, optimization="saga", l1_l2_ratio=0.5, path=None):
-    model_c = LogisticRegression(max_iter=iteration, penalty=penalty_option, C=regularization_strength,solver=optimization,l1_ratio=l1_l2_ratio)
-    clf_resnet = MultiOutputClassifier(model_c).fit(train_adata.obsm["resnet50_features"], train_adata.obsm["true_gene_expression"])
+    model_c = LogisticRegression(max_iter=iteration, penalty=penalty_option,
+                                 C=regularization_strength, solver=optimization, l1_ratio=l1_l2_ratio)
+    clf_resnet = MultiOutputClassifier(model_c).fit(
+        train_adata.obsm["resnet50_features"], train_adata.obsm["true_gene_expression"])
     joblib.dump(clf_resnet, path+'pickle/LRmodel.pkl')
-

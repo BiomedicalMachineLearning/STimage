@@ -1,3 +1,9 @@
+import numpy as np
+from tqdm import tqdm
+from PIL import Image, ImageChops
+import os
+import pandas as pd
+from pathlib import Path
 import warnings
 from typing import Optional, Union
 import cv2 as cv
@@ -29,7 +35,7 @@ def gene_plot(
         show_color_bar: bool = True,
         show_axis: bool = False,
         cropped: bool = True,
-        image_scale: int= None,
+        image_scale: int = None,
         margin: int = 100,
         name: str = None,
         output: str = None,
@@ -126,8 +132,9 @@ def gene_plot(
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
-    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
-    scale_size = (image.shape[1]* scale_factor, image.shape[0]* scale_factor)
+    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]
+                                                       [library_id]["use_quality"]]
+    scale_size = (image.shape[1] * scale_factor, image.shape[0] * scale_factor)
     image_pil = Image.fromarray(image)
     image_pil.thumbnail(scale_size, Image.ANTIALIAS)
     image = np.array(image_pil)
@@ -207,10 +214,6 @@ def _gene_plot(adata, method, genes):
 
 """Reading and Writing
 """
-from pathlib import Path
-from typing import Optional, Union
-from anndata import AnnData
-import pandas as pd
 
 
 def Read10X(
@@ -290,9 +293,11 @@ def Read10X(
 
     if quality == "fulres":
         image_coor = adata.obsm["spatial"]
-        adata.uns["spatial"][library_id]["images"][quality] = plt.imread(source_image_path, 0)
+        adata.uns["spatial"][library_id]["images"][quality] = plt.imread(
+            source_image_path, 0)
     else:
-        scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_" + quality + "_scalef"]
+        scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_" +
+                                                                 quality + "_scalef"]
         image_coor = adata.obsm["spatial"] * scale
 
     adata.obs["imagecol"] = image_coor[:, 0]
@@ -301,12 +306,6 @@ def Read10X(
 
     return adata
 
-from typing import Optional, Union
-from anndata import AnnData
-from matplotlib import pyplot as plt
-from pathlib import Path
-import os
-from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -321,7 +320,6 @@ def add_image(
     spot_diameter_fullres: float = 50,
     copy: bool = False,
 ) -> Optional[AnnData]:
-
     """\
     Adding image data to the Anndata object
 
@@ -367,8 +365,10 @@ def add_image(
                 adata.uns["spatial"][library_id]["scalefactors"][
                     "spot_diameter_fullres"
                 ] = spot_diameter_fullres
-                adata.obsm["spatial"] = adata.obs[["imagecol", "imagerow"]].values
-                adata.obs[["imagecol", "imagerow"]] = adata.obsm["spatial"] * scale
+                adata.obsm["spatial"] = adata.obs[[
+                    "imagecol", "imagerow"]].values
+                adata.obs[["imagecol", "imagerow"]
+                          ] = adata.obsm["spatial"] * scale
 
             print("Added tissue image to the object!")
 
@@ -386,7 +386,6 @@ def add_image(
         """
         )
     return adata if copy else None
-
 
 
 def ReadOldST(
@@ -423,7 +422,8 @@ def ReadOldST(
 
     adata = scanpy.read_text(count_matrix_file)
     spot_df = pd.read_csv(spot_path, index_col=0)
-    comm_index = pd.Series(list(set(spot_df.index).intersection(set(adata.obs_names))))
+    comm_index = pd.Series(
+        list(set(spot_df.index).intersection(set(adata.obs_names))))
     adata = adata[comm_index]
     adata.obs["imagecol"] = spot_df["X"]
     adata.obs["imagerow"] = spot_df["Y"]
@@ -441,11 +441,6 @@ def ReadOldST(
 
 # Test progress bar
 
-from typing import Optional, Union
-from anndata import AnnData
-from PIL import Image, ImageChops
-from pathlib import Path
-
 
 def ensembl_to_id(
         adata: AnnData,
@@ -458,21 +453,16 @@ def ensembl_to_id(
     else:
         ens_path = Path(__file__).parent.absolute() / "ensembl.tsv"
     ens_df = pd.read_csv(ens_path, sep="\t")
-    a = pd.Index(ens_df["Ensembl ID(supplied by Ensembl)"]).intersection(adata.var_names)
-    var_dic = dict(zip(ens_df["Ensembl ID(supplied by Ensembl)"], ens_df["Approved symbol"]))
+    a = pd.Index(ens_df["Ensembl ID(supplied by Ensembl)"]
+                 ).intersection(adata.var_names)
+    var_dic = dict(
+        zip(ens_df["Ensembl ID(supplied by Ensembl)"], ens_df["Approved symbol"]))
     adata = adata[:, a].copy()
     adata.var_names = adata.var_names.map(var_dic)
     return adata if copy else None
 
 
-from typing import Optional, Union
-from anndata import AnnData
-from pathlib import Path
-
 # Test progress bar
-from tqdm import tqdm
-import numpy as np
-import os
 
 
 def tiling(
@@ -481,7 +471,7 @@ def tiling(
         library_id: str = None,
         crop_size: int = 40,
         target_size: int = 299,
-        stain_normaliser = None,
+        stain_normaliser=None,
         image_select: Union[str, np.ndarray] = "HE",
         verbose: bool = False,
         copy: bool = False,
@@ -520,7 +510,8 @@ def tiling(
     if not os.path.isdir(out_path):
         os.mkdir(out_path)
     if type(image_select) == str:
-        image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
+        image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]
+                                                           [library_id]["use_quality"]]
     else:
         image = image_select
     if image.dtype == np.float32 or image.dtype == np.float64:
@@ -549,7 +540,8 @@ def tiling(
                 tile = stain_normaliser.transform_tile(tile)
             # tile.thumbnail((target_size, target_size), Image.ANTIALIAS)
             tile = tile.resize((target_size, target_size))
-            tile_name = library_id + "-" + str(imagecol) + "-" + str(imagerow) + "-" + str(crop_size)
+            tile_name = library_id + "-" + \
+                str(imagecol) + "-" + str(imagerow) + "-" + str(crop_size)
             out_tile = Path(out_path) / (tile_name + ".jpeg")
             tile_names.append(str(out_tile))
             if verbose:
@@ -605,11 +597,13 @@ def calculate_bg(
         img_small = stain_normaliser.transform_tile(img_small)
 
     target_img_norm_filtered = filter_green(img_small, g_thresh=250)
-    target_img_norm_filtered = filter_grays(target_img_norm_filtered, tolerance=3)
+    target_img_norm_filtered = filter_grays(
+        target_img_norm_filtered, tolerance=3)
     tissue_mask = tissue_mask_grabcut(np.array(target_img_norm_filtered))
     tissue_mask_up_scale = tissue_mask.resize(img.size, Image.ANTIALIAS)
 
-    _TILE_PATH = Path("/tmp") / (list(adata.uns["spatial"].keys())[0] + "_tissue_mask")
+    _TILE_PATH = Path("/tmp") / \
+        (list(adata.uns["spatial"].keys())[0] + "_tissue_mask")
     _TILE_PATH.mkdir(parents=True, exist_ok=True)
 
     tiling(adata, _TILE_PATH, crop_size=crop_size, image_select=np.array(tissue_mask_up_scale),
@@ -622,12 +616,6 @@ def calculate_bg(
         tissue_area_list.append(tissue_area)
     adata.obs["tissue_area"] = np.array(tissue_area_list)
     return adata if copy else None
-
-
-import warnings
-from typing import Optional, Union
-from anndata import AnnData
-from matplotlib import pyplot as plt
 
 
 # from .utils import get_img_from_fig, checkType
@@ -738,7 +726,8 @@ def tissue_area_plot(
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
-    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"][library_id]["use_quality"]]
+    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]
+                                                       [library_id]["use_quality"]]
     # Overlay the tissue image
     a.imshow(image, alpha=tissue_alpha, zorder=-1, )
 
@@ -781,13 +770,16 @@ def tissue_mask_grabcut(img):
     """Masks the tissue region using cv2
     """
     img_cv = img[:, :, ::-1]  # Convert RGB to BGR
-    mask_initial = (np.array(Image.fromarray(img).convert('L')) < 250).astype(np.uint8)
+    mask_initial = (np.array(Image.fromarray(img).convert('L'))
+                    < 250).astype(np.uint8)
 
     # Grabcut
     bgdModel = np.zeros((1, 65), np.float64)
     fgdModel = np.zeros((1, 65), np.float64)
-    cv.grabCut(img_cv, mask_initial, None, bgdModel, fgdModel, 5, cv.GC_INIT_WITH_MASK)
-    mask_final = np.where((mask_initial == 2) | (mask_initial == 0), 0, 1).astype('uint8')
+    cv.grabCut(img_cv, mask_initial, None, bgdModel,
+               fgdModel, 5, cv.GC_INIT_WITH_MASK)
+    mask_final = np.where((mask_initial == 2) | (
+        mask_initial == 0), 0, 1).astype('uint8')
 
     # Generate a rough 'filled in' mask of the tissue
     kernal_64 = cv.getStructuringElement(cv.MORPH_ELLIPSE, (64, 64))
@@ -836,7 +828,7 @@ def filter_grays(img, tolerance=3):
 def classification_preprocessing(anndata):
     gene_exp = anndata.to_df()
     gene_exp['library_id'] = anndata.obs['library_id']
-    gene_exp_zscore = gene_exp.groupby('library_id')[list(gene_exp.iloc[:,:-1].columns)].apply(lambda x: (x-x.mean())/(x.std()))
+    gene_exp_zscore = gene_exp.groupby('library_id')[list(
+        gene_exp.iloc[:, :-1].columns)].apply(lambda x: (x-x.mean())/(x.std()))
     anndata.obsm["true_gene_expression"] = pd.DataFrame(gene_exp_zscore.apply(lambda x: [0 if y <= 0 else 1 for y in x]),
-                                                       columns = anndata.to_df().columns, index = anndata.obs.index)
-
+                                                        columns=anndata.to_df().columns, index=anndata.obs.index)

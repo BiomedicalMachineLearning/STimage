@@ -12,7 +12,8 @@ from anndata import read_h5ad
 import scanpy as sc
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="STimage software --- Training")
+    parser = argparse.ArgumentParser(
+        description="STimage software --- Training")
     parser.add_argument('--config', dest='config', type=Path,
                         help='Path to config file')
     args = parser.parse_args()
@@ -71,13 +72,17 @@ if __name__ == "__main__":
 
         adata_all = adata_all[:, comm_genes].copy()
         if model_name.split("_")[-1] == "classification":
-            adata_all.X = adata_all.to_df().apply(lambda x: pd.qcut(x, 3, duplicates='drop', labels=False))
+            adata_all.X = adata_all.to_df().apply(
+                lambda x: pd.qcut(x, 3, duplicates='drop', labels=False))
         All_sample = pd.Series(adata_all.obs["library_id"].unique())
-        training_valid_sample = All_sample.sample(frac=training_ratio, random_state=1)
-        training_valid_index_ = All_sample.index.isin(training_valid_sample.index)
+        training_valid_sample = All_sample.sample(
+            frac=training_ratio, random_state=1)
+        training_valid_index_ = All_sample.index.isin(
+            training_valid_sample.index)
 
         if len(training_valid_sample) > 1:
-            valid_sample = training_valid_sample.sample(frac=valid_ratio, random_state=1)
+            valid_sample = training_valid_sample.sample(
+                frac=valid_ratio, random_state=1)
             valid_index_ = training_valid_sample.index.isin(valid_sample.index)
             training_sample = training_valid_sample[~valid_index_]
         else:
@@ -86,11 +91,14 @@ if __name__ == "__main__":
 
         test_Sample = All_sample[~training_valid_index_].copy()
 
-        train_adata = adata_all[adata_all.obs["library_id"].isin(training_sample)].copy()
+        train_adata = adata_all[adata_all.obs["library_id"].isin(
+            training_sample)].copy()
         train_adata.write(DATA_PATH / "train_adata.h5ad")
-        valid_adata = adata_all[adata_all.obs["library_id"].isin(valid_sample)].copy()
+        valid_adata = adata_all[adata_all.obs["library_id"].isin(
+            valid_sample)].copy()
         valid_adata.write(DATA_PATH / "valid_adata.h5ad")
-        test_adata = adata_all[adata_all.obs["library_id"].isin(test_Sample)].copy()
+        test_adata = adata_all[adata_all.obs["library_id"].isin(
+            test_Sample)].copy()
         test_adata.write(DATA_PATH / "test_adata.h5ad")
 
     n_genes = len(comm_genes)
@@ -114,19 +122,20 @@ if __name__ == "__main__":
 
     model = None
     if model_name == "NB_regression":
-        model = CNN_NB_multiple_genes((tile_size, tile_size, 3), n_genes, cnnbase=cnn_base, ft=fine_tuning)
+        model = CNN_NB_multiple_genes(
+            (tile_size, tile_size, 3), n_genes, cnnbase=cnn_base, ft=fine_tuning)
 
         callbacks = [PrinterCallback()]
         # callbacks = []
         if early_stop:
             callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10,
-                                                          restore_best_weights=True))
+                                                              restore_best_weights=True))
 
         train_history = model.fit(train_gen_,
-                              validation_data=valid_gen_,
-                              epochs=epochs,
-                              callbacks=callbacks,
-                              verbose=0)
+                                  validation_data=valid_gen_,
+                                  epochs=epochs,
+                                  callbacks=callbacks,
+                                  verbose=0)
         if save_train_history:
             with open(OUT_PATH / "training_history.pkl", "wb") as file:
                 pickle.dump(train_history.history, file)

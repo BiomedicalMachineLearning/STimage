@@ -2,7 +2,8 @@ import imgaug as ia
 from imgaug import augmenters as iaa
 
 ia.seed(3)
-sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+def sometimes(aug): return iaa.Sometimes(0.5, aug)
+
 
 seq_aug = iaa.Sequential(
     [
@@ -10,7 +11,8 @@ seq_aug = iaa.Sequential(
         iaa.Fliplr(0.5),  # horizontally flip 50% of all images
         iaa.Flipud(0.5),  # vertically flip 50% of all images
         sometimes(iaa.Affine(
-            scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},  # scale images to 80-120% of their size, individually per axis
+            # scale images to 80-120% of their size, individually per axis
+            scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
             rotate=(-45, 45),  # rotate by -45 to +45 degrees
         )),
         # execute 0 to 5 of the following (less important) augmenters per image
@@ -18,7 +20,8 @@ seq_aug = iaa.Sequential(
         iaa.SomeOf((0, 1),
                    [
                        iaa.OneOf([
-                           iaa.GaussianBlur((0, 3.0)),  # blur images with a sigma between 0 and 3.0
+                           # blur images with a sigma between 0 and 3.0
+                           iaa.GaussianBlur((0, 3.0)),
                            #                     iaa.AverageBlur(k=(2, 7)), # blur image using local means with kernel sizes between 2 and 7
                            #                     iaa.MedianBlur(k=(3, 11)), # blur image using local medians with kernel sizes between 2 and 7
                        ]),
@@ -30,7 +33,8 @@ seq_aug = iaa.Sequential(
                        #                     iaa.EdgeDetect(alpha=(0.5, 1.0)),
                        #                     iaa.DirectedEdgeDetect(alpha=(0.5, 1.0), direction=(0.0, 1.0)),
                        #                 ])),
-                       iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05 * 255), per_channel=0.5),
+                       iaa.AdditiveGaussianNoise(loc=0, scale=(
+                           0.0, 0.05 * 255), per_channel=0.5),
                        # add gaussian noise to images
                        #                 iaa.OneOf([
                        #                     iaa.Dropout((0.01, 0.1), per_channel=0.5), # randomly remove up to 10% of the pixels
@@ -38,7 +42,8 @@ seq_aug = iaa.Sequential(
                        #                 ]),
                        #                 iaa.Invert(0.05, per_channel=True), # invert color channels
                        #                 iaa.Add((-10, 10), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
-                       iaa.AddToHueAndSaturation((-20, 20)),  # change hue and saturation
+                       # change hue and saturation
+                       iaa.AddToHueAndSaturation((-20, 20)),
                        # #                 # either change the brightness of the whole image (sometimes
                        # #                 # per channel) or change the brightness of subareas
                        #                 iaa.LinearContrast((0.5, 2.0), per_channel=0.5), # improve or worsen the contrast
@@ -46,9 +51,9 @@ seq_aug = iaa.Sequential(
                        #                 sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
                        #                 sometimes(iaa.PiecewiseAffine(scale=(0.01, 0.05))), # sometimes move parts of the image around
                        #                 sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1)))
-                   ],
-                   random_order=True
-                   )
+        ],
+            random_order=True
+        )
     ],
     random_order=True
 )

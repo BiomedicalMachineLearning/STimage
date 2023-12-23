@@ -9,7 +9,8 @@ from _model import CNN_NB_multiple_genes
 from anndata import read_h5ad
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="STimage software --- Prediction")
+    parser = argparse.ArgumentParser(
+        description="STimage software --- Prediction")
     parser.add_argument('--config', dest='config', type=Path,
                         help='Path to config file')
     args = parser.parse_args()
@@ -41,7 +42,8 @@ if __name__ == "__main__":
 
     model = None
     if model_name == "NB_regression":
-        model = CNN_NB_multiple_genes((tile_size, tile_size, 3), n_genes, cnnbase=cnn_base, ft=fine_tuning)
+        model = CNN_NB_multiple_genes(
+            (tile_size, tile_size, 3), n_genes, cnnbase=cnn_base, ft=fine_tuning)
 
     model.load_weights(OUT_PATH / "model_weights.h5")
     test_predictions = model.predict(test_gen_)
@@ -57,10 +59,9 @@ if __name__ == "__main__":
             y_preds.append(y_pred)
         test_adata.obsm["predicted_gene"] = np.array(y_preds).transpose()
     elif model_name == "classification":
-        clf_resnet = joblib.load(OUT_PATH +'pickle/LRmodel.pkl')
-        test_adata.obsm["predicted_gene_expression"] = clf_resnet.predict(test_adata.obsm["resnet50_features"])
-
-
+        clf_resnet = joblib.load(OUT_PATH + 'pickle/LRmodel.pkl')
+        test_adata.obsm["predicted_gene_expression"] = clf_resnet.predict(
+            test_adata.obsm["resnet50_features"])
 
     test_adata_ = test_adata.copy()
     test_adata_.X = test_adata_.obsm["predicted_gene"]

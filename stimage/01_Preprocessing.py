@@ -14,7 +14,8 @@ from _model import ResNet50_features
 from _utils import tiling, ensembl_to_id, ReadOldST, Read10X, scale_img, calculate_bg, classification_preprocessing
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="STimage software --- Preprocessing")
+    parser = argparse.ArgumentParser(
+        description="STimage software --- Preprocessing")
     parser.add_argument('--config', dest='config', type=Path,
                         help='Path to config file')
     args = parser.parse_args()
@@ -32,7 +33,8 @@ if __name__ == "__main__":
     tile_size = int(config["DATASET"]["tile_size"])
     stain_normalization = config["DATASET"].getboolean("stain_normalization")
     template_sample = config["DATASET"]["template_sample"]
-    tile_filtering_threshold = float(config["DATASET"]["tile_filtering_threshold"])
+    tile_filtering_threshold = float(
+        config["DATASET"]["tile_filtering_threshold"])
     TILING_PATH.mkdir(parents=True, exist_ok=True)
     meta = pd.read_csv(META_PATH)
 
@@ -73,7 +75,8 @@ if __name__ == "__main__":
                 template_img = adata.uns["spatial"][Sample]['images']["fulres"]
                 template_img = Image.fromarray(template_img.astype("uint8"))
 
-                normaliser = IterativeNormaliser(normalisation_method='vahadane', standardise_luminosity=True)
+                normaliser = IterativeNormaliser(
+                    normalisation_method='vahadane', standardise_luminosity=True)
                 normaliser.fit_target(scale_img(template_img))
 
             if normalization == "log":
@@ -87,13 +90,18 @@ if __name__ == "__main__":
             if tile_filtering_threshold < 1:
                 print("filtering out tiles where tissue area less than {} of total tile area".format(
                     tile_filtering_threshold))
-                calculate_bg(adata, crop_size=tile_size, stain_normaliser=normaliser)
-                tile_to_remove = sum(adata.obs["tissue_area"] < tile_filtering_threshold)
-                adata = adata[adata.obs["tissue_area"] >= tile_filtering_threshold].copy()
-                print("{} tiles with low tissue coverage are removed".format(tile_to_remove))
+                calculate_bg(adata, crop_size=tile_size,
+                             stain_normaliser=normaliser)
+                tile_to_remove = sum(
+                    adata.obs["tissue_area"] < tile_filtering_threshold)
+                adata = adata[adata.obs["tissue_area"]
+                              >= tile_filtering_threshold].copy()
+                print("{} tiles with low tissue coverage are removed".format(
+                    tile_to_remove))
                 adata_list[i] = adata
 
-            tiling(adata, out_path=TILING_PATH, crop_size=tile_size, stain_normaliser=normaliser)
+            tiling(adata, out_path=TILING_PATH,
+                   crop_size=tile_size, stain_normaliser=normaliser)
 
         adata_all = adata_list[0].concatenate(
             adata_list[1:],
