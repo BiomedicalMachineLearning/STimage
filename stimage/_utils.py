@@ -17,6 +17,172 @@ from matplotlib import pyplot as plt
 from PIL import Image
 
 # from .utils import get_img_from_fig, checkType
+""" QC plot
+"""
+
+
+def QC_plot(
+    adata: AnnData,
+    library_id: str = None,
+    name: str = None,
+    data_alpha: float = 0.8,
+    tissue_alpha: float = 1.0,
+    cmap: str = "Spectral_r",
+    spot_size: tuple = (5, 40),
+    show_color_bar: bool = True,
+    show_size_legend: bool = True,
+    show_axis: bool = False,
+    cropped: bool = True,
+    image_scale: int = None,
+    margin: int = 100,
+    dpi: int = 150,
+    output: str = None,
+) -> Optional[AnnData]:
+    """\
+        QC plot for sptial transcriptomics data.
+
+        Parameters
+        ----------
+        adata
+            Annotated data matrix.
+        library_id
+            Library id stored in AnnData.
+        data_alpha
+            Opacity of the spot.
+        tissue_alpha
+            Opacity of the tissue.
+        cmap
+            Color map to use.
+        spot_size
+            Size of the spot (min, max).
+        show_color_bar
+            Show color bar or not.
+        show_axis
+            Show axis or not.
+        show_size_legend
+            Show size legend or not.
+        name
+            Name of the output figure file.
+        output
+            Save the figure as file or not.
+        copy
+            Return a copy instead of writing to adata.
+        Returns
+        -------
+        Nothing
+        """
+    from sklearn.preprocessing import MinMaxScaler
+
+    reads_per_spot = adata.to_df().sum(axis=1)
+    scaler = MinMaxScaler(feature_range=spot_size)
+    reads_per_spot_size = scaler.fit_transform(
+        reads_per_spot.to_numpy().reshape(-1, 1))
+    genes_per_spot = adata.to_df().astype(bool).sum(axis=1)
+
+    scale_factor = 1
+    if image_scale:
+        scale_factor = 1 / image_scale
+
+    imagecol = adata.obs["imagecol"] * scale_factor
+    imagerow = adata.obs["imagerow"] * scale_factor
+    # plt.rcParams['figure.dpi'] = dpi
+
+    # Option for turning off showing figure
+    plt.ioff()
+
+    # Initialize matplotlib
+    fig, a = plt.subplots()
+
+    vmin = min(genes_per_spot)
+    vmax = max(genes_per_spot)
+    # Plot scatter plot based on pixel of spots
+    plot = a.scatter(
+        imagecol,
+        imagerow,
+        edgecolor="none",
+        alpha=data_alpha,
+        s=reads_per_spot_size,
+        marker="o",
+        vmin=vmin,
+        vmax=vmax,
+        cmap=plt.get_cmap(cmap),
+        c=genes_per_spot,
+    )
+
+    if show_color_bar:
+        from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+        axins = inset_axes(
+            a,
+            width="100%",
+            height="100%",
+            loc="upper left",
+            bbox_to_anchor=(1.0, 0.73, 0.05, 0.35),
+            bbox_transform=a.transAxes,
+            borderpad=4.3,
+        )
+        cb = plt.colorbar(plot, cax=axins)
+        cb.ax.set_xlabel("Number of Genes", fontsize=10)
+        cb.ax.xaxis.set_label_coords(0.98, 1.20)
+        cb.outline.set_visible(False)
+
+    if show_size_legend:
+        size_min, size_max = spot_size
+        markers = [
+            size_min,
+            size_min + 1 / 3 * (size_max - size_min),
+            size_min + 2 / 3 * (size_max - size_min),
+            size_max,
+        ]
+        legend_markers = [plt.scatter([], [], s=i, c="grey") for i in markers]
+        labels = [
+            str(int(scaler.inverse_transform(np.array(i).reshape(1, 1))))
+            for i in markers
+        ]
+        a.legend(
+            handles=legend_markers,
+            labels=labels,
+            loc="lower left",
+            bbox_to_anchor=(1, 0.05),
+            scatterpoints=1,
+            frameon=False,
+            title="Number of Reads",
+        )
+
+    if not show_axis:
+        a.axis("off")
+    if library_id is None:
+        library_id = list(adata.uns["spatial"].keys())[0]
+
+    image = adata.uns["spatial"][library_id]["images"][
+        adata.uns["spatial"][library_id]["use_quality"]]
+    scale_size = (image.shape[1] * scale_factor, image.shape[0] * scale_factor)
+    image_pil = Image.fromarray(image)
+    image_pil.thumbnail(scale_size, Image.ANTIALIAS)
+    image = np.array(image_pil)
+    # Overlay the tissue image
+    a.imshow(
+        image,
+        alpha=tissue_alpha,
+        zorder=-1,
+    )
+
+    if cropped:
+        a.set_xlim(imagecol.min() - margin, imagecol.max() + margin)
+
+        a.set_ylim(imagerow.min() - margin, imagerow.max() + margin)
+        a.set_ylim(a.get_ylim()[::-1])
+        # plt.gca().invert_yaxis()
+
+    # fig.tight_layout()
+    if output is not None:
+        fig.savefig(
+            output + "/" + name,
+            dpi=dpi,
+            bbox_inches="tight",
+            pad_inches=0)
+
+    plt.show()
 
 
 def gene_plot(
@@ -86,7 +252,7 @@ def gene_plot(
 
     # plt.rcParams['figure.dpi'] = dpi
 
-    if type(genes) == str:
+    if isinstance(genes, str):
         genes = [genes]
     colors = _gene_plot(adata, method, genes)
 
@@ -118,8 +284,17 @@ def gene_plot(
     else:
         vmax = max(colors)
     # Plot scatter plot based on pixel of spots
-    plot = a.scatter(imagecol, imagerow, edgecolor="none", alpha=data_alpha, s=spot_size, marker="o",
-                     vmin=vmin, vmax=vmax, cmap=plt.get_cmap(cmap), c=colors)
+    plot = a.scatter(
+        imagecol,
+        imagerow,
+        edgecolor="none",
+        alpha=data_alpha,
+        s=spot_size,
+        marker="o",
+        vmin=vmin,
+        vmax=vmax,
+        cmap=plt.get_cmap(cmap),
+        c=colors)
 
     if show_color_bar:
         cb = plt.colorbar(plot, cax=fig.add_axes(
@@ -132,8 +307,8 @@ def gene_plot(
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
-    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]
-                                                       [library_id]["use_quality"]]
+    image = adata.uns["spatial"][library_id]["images"][
+        adata.uns["spatial"][library_id]["use_quality"]]
     scale_size = (image.shape[1] * scale_factor, image.shape[0] * scale_factor)
     image_pil = Image.fromarray(image)
     image_pil.thumbnail(scale_size, Image.ANTIALIAS)
@@ -285,7 +460,6 @@ def Read10X(
                         load_images=load_images,
                         source_image_path=source_image_path)
     adata.var_names_make_unique()
-
     adata.obs['sum_counts'] = np.array(adata.X.sum(axis=1))
 
     if library_id is None:
@@ -296,8 +470,8 @@ def Read10X(
         adata.uns["spatial"][library_id]["images"][quality] = plt.imread(
             source_image_path, 0)
     else:
-        scale = adata.uns["spatial"][library_id]["scalefactors"]["tissue_" +
-                                                                 quality + "_scalef"]
+        scale = adata.uns["spatial"][library_id]["scalefactors"][
+            "tissue_" + quality + "_scalef"]
         image_coor = adata.obsm["spatial"] * scale
 
     adata.obs["imagecol"] = image_coor[:, 0]
@@ -373,7 +547,7 @@ def add_image(
             print("Added tissue image to the object!")
 
             return adata if copy else None
-        except:
+        except BaseException:
             raise ValueError(
                 f"""\
             {imgpath!r} does not end on a valid extension.
@@ -509,9 +683,9 @@ def tiling(
     # Check the exist of out_path
     if not os.path.isdir(out_path):
         os.mkdir(out_path)
-    if type(image_select) == str:
-        image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]
-                                                           [library_id]["use_quality"]]
+    if isinstance(image_select, str):
+        image = adata.uns["spatial"][library_id]["images"][
+            adata.uns["spatial"][library_id]["use_quality"]]
     else:
         image = image_select
     if image.dtype == np.float32 or image.dtype == np.float64:
@@ -527,7 +701,9 @@ def tiling(
             desc="Tiling image",
             bar_format="{l_bar}{bar} [ time left: {remaining} ]",
     ) as pbar:
-        for imagerow, imagecol in zip(adata.obs["imagerow"], adata.obs["imagecol"]):
+        for imagerow, imagecol in zip(
+                adata.obs["imagerow"],
+                adata.obs["imagecol"]):
 
             imagerow_down = imagerow - crop_size / 2
             imagerow_up = imagerow + crop_size / 2
@@ -606,8 +782,8 @@ def calculate_bg(
         (list(adata.uns["spatial"].keys())[0] + "_tissue_mask")
     _TILE_PATH.mkdir(parents=True, exist_ok=True)
 
-    tiling(adata, _TILE_PATH, crop_size=crop_size, image_select=np.array(tissue_mask_up_scale),
-           save_name="tile_tissue_mask_path")
+    tiling(adata, _TILE_PATH, crop_size=crop_size, image_select=np.array(
+        tissue_mask_up_scale), save_name="tile_tissue_mask_path")
 
     tissue_area_list = []
     for img_path in adata.obs["tile_tissue_mask_path"]:
@@ -712,8 +888,17 @@ def tissue_area_plot(
     else:
         vmax = max(colors)
     # Plot scatter plot based on pixel of spots
-    plot = a.scatter(imagecol, imagerow, edgecolor="none", alpha=data_alpha, s=spot_size, marker="o",
-                     vmin=vmin, vmax=vmax, cmap=plt.get_cmap(cmap), c=colors)
+    plot = a.scatter(
+        imagecol,
+        imagerow,
+        edgecolor="none",
+        alpha=data_alpha,
+        s=spot_size,
+        marker="o",
+        vmin=vmin,
+        vmax=vmax,
+        cmap=plt.get_cmap(cmap),
+        c=colors)
     plot.set_clim(vmin=vmin, vmax=vmax)
     if show_color_bar:
         cb = plt.colorbar(plot, cax=fig.add_axes(
@@ -726,8 +911,8 @@ def tissue_area_plot(
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
-    image = adata.uns["spatial"][library_id]["images"][adata.uns["spatial"]
-                                                       [library_id]["use_quality"]]
+    image = adata.uns["spatial"][library_id]["images"][
+        adata.uns["spatial"][library_id]["use_quality"]]
     # Overlay the tissue image
     a.imshow(image, alpha=tissue_alpha, zorder=-1, )
 
@@ -829,6 +1014,7 @@ def classification_preprocessing(anndata):
     gene_exp = anndata.to_df()
     gene_exp['library_id'] = anndata.obs['library_id']
     gene_exp_zscore = gene_exp.groupby('library_id')[list(
-        gene_exp.iloc[:, :-1].columns)].apply(lambda x: (x-x.mean())/(x.std()))
-    anndata.obsm["true_gene_expression"] = pd.DataFrame(gene_exp_zscore.apply(lambda x: [0 if y <= 0 else 1 for y in x]),
-                                                        columns=anndata.to_df().columns, index=anndata.obs.index)
+        gene_exp.iloc[:, :-1].columns)].apply(lambda x: (x - x.mean()) / (x.std()))
+    anndata.obsm["true_gene_expression"] = pd.DataFrame(
+        gene_exp_zscore.apply(lambda x: [0 if y <= 0 else 1 for y in x]),
+        columns=anndata.to_df().columns, index=anndata.obs.index)
