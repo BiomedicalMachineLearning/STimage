@@ -461,7 +461,7 @@ def Read10X(
                         source_image_path=source_image_path)
     adata.var_names_make_unique()
     adata.obs['sum_counts'] = np.array(adata.X.sum(axis=1))
-
+    adata.obsm["spatial"] = adata.obsm["spatial"].astype(np.int)
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
