@@ -1,0 +1,101 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stimage"
+dynamic = ["version", "dependencies"]
+description = 'predict gene expression from spatial transcriptomics data'
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+keywords = []
+authors = [
+  { name = "xiao233333", email = "xiaotan0307@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+
+[project.urls]
+Documentation = "https://github.com/unknown/stimage#readme"
+Issues = "https://github.com/unknown/stimage/issues"
+Source = "https://github.com/unknown/stimage"
+
+[tool.hatch.version]
+path = "stimage/__about__.py"
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+
+[tool.hatch.env]
+requires = [
+  "hatch-pip-compile",
+  "hatch-requirements-txt",
+]
+
+[tool.hatch.envs.default]
+type = "pip-compile"
+pip-compile-verbose = true
+lock-filename = "requirements.lock"
+dependencies = [
+  "tensorflow >= 2.4.0",
+  "hatch",
+  "scanpy >= 1.7.1", 
+  "opencv-python >= 4.8.1",
+  "imgaug >= 0.4.0",
+  "staintools >= 2.1.2",
+  "lime >= 0.2.0.1",
+
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = [
+  "- coverage combine",
+  "coverage report",
+]
+cov = [
+  "test-cov",
+  "cov-report",
+]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.types]
+dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:stimage tests}"
+
+[tool.coverage.run]
+source_pkgs = ["stimage", "tests"]
+branch = true
+parallel = true
+omit = [
+  "stimage/__about__.py",
+]
+
+[tool.coverage.paths]
+stimage = ["stimage", "*/stimage/stimage"]
+tests = ["tests", "*/stimage/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
