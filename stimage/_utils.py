@@ -726,6 +726,8 @@ def tiling(
                         str(imagecol), str(imagerow)
                     )
                 )
+            if tile.mode == "RGBA":
+                tile = tile.convert('RGB')
             tile.save(out_tile, "JPEG")
 
             pbar.update(1)
