@@ -1,3 +1,6 @@
+import scipy.ndimage
+import scipy as sp
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 import numpy as np
 from tqdm import tqdm
 from PIL import Image, ImageChops
@@ -10,7 +13,8 @@ import cv2 as cv
 import scanpy
 from anndata import AnnData
 from matplotlib import pyplot as plt
-
+from skimage.filters import threshold_otsu, threshold_multiotsu
+from sklearn.metrics import jaccard_score
 
 # from .utils import get_img_from_fig, checkType
 
@@ -188,6 +192,7 @@ def QC_plot(
 def gene_plot(
         adata: AnnData,
         method: str = "CumSum",
+        slot: str = None,
         genes: Optional[Union[str, list]] = None,
         threshold: float = None,
         library_id: str = None,
@@ -201,60 +206,68 @@ def gene_plot(
         show_color_bar: bool = True,
         show_axis: bool = False,
         cropped: bool = True,
-        image_scale: int = None,
+        image_scale: bool = True,
         margin: int = 100,
         name: str = None,
         output: str = None,
-        copy: bool = False,
-) -> Optional[AnnData]:
-    """\
-    Gene expression plot for sptial transcriptomics data.
+) -> Optional[FigureCanvasAgg]:
+    """
+    Gene expression plot for spatial transcriptomics data.
+
     Parameters
     ----------
-    adata
+    adata : AnnData
         Annotated data matrix.
-    library_id
-        Library id stored in AnnData.
-    method
-        Use method to count. We prorive: NaiveMean, NaiveSum, CumSum.
-    genes
+    method : str, optional
+        Use method to count. We provide: NaiveMean, NaiveSum, CumSum.
+    slot : str, optional
+        Slot name in adata.obsm.
+    genes : str or list, optional
         Choose a gene or a list of genes.
-    threshold
-        Threshold to filter genes
-    data_alpha
+    threshold : float, optional
+        Threshold to filter genes.
+    library_id : str, optional
+        Library id stored in AnnData.
+    data_alpha : float, optional
         Opacity of the spot.
-    tissue_alpha
+    tissue_alpha : float, optional
         Opacity of the tissue.
-    cmap
+    vmin : float, optional
+        Minimum value for the color map.
+    vmax : float, optional
+        Maximum value for the color map.
+    cmap : str, optional
         Color map to use.
-    spot_size
+    spot_size : float or int, optional
         Size of the spot.
-    show_color_bar
-        Show color bar or not.
-    show_axis
-        Show axis or not.
-    show_legend
+    show_legend : bool, optional
         Show legend or not.
-    show_trajectory
-        Show the spatial trajectory or not. It requires stlearn.spatial.trajectory.pseudotimespace.
-    show_subcluster
-        Show subcluster or not. It requires stlearn.spatial.trajectory.global_level.
-    name
+    show_color_bar : bool, optional
+        Show color bar or not.
+    show_axis : bool, optional
+        Show axis or not.
+    cropped : bool, optional
+        Crop the image or not.
+    image_scale : bool, optional
+        Scale the image or not.
+    margin : int, optional
+        Margin size.
+    name : str, optional
         Name of the output figure file.
-    output
+    output : str, optional
         Save the figure as file or not.
-    copy
-        Return a copy instead of writing to adata.
+
     Returns
     -------
-    Nothing
+    Optional[FigureCanvasAgg]
+        The generated gene expression plot as a FigureCanvasAgg object.
     """
 
     # plt.rcParams['figure.dpi'] = dpi
 
     if isinstance(genes, str):
         genes = [genes]
-    colors = _gene_plot(adata, method, genes)
+    colors = _gene_plot(adata, method, genes, slot)
 
     if threshold is not None:
         colors = colors[colors > threshold]
@@ -265,7 +278,8 @@ def gene_plot(
 
     scale_factor = 1
     if image_scale:
-        scale_factor = 1 / image_scale
+        scale_factor = adata.uns['spatial'][library_id]['scalefactors'][
+            'tissue_hires_scalef']
 
     imagecol = filter_obs["imagecol"] * scale_factor
     imagerow = filter_obs["imagerow"] * scale_factor
@@ -274,7 +288,7 @@ def gene_plot(
     plt.ioff()
 
     # Initialize matplotlib
-    fig, a = plt.subplots()
+    fig, a = plt.subplots(figsize=(10, 10))
     if vmin:
         vmin = vmin
     else:
@@ -290,7 +304,7 @@ def gene_plot(
         edgecolor="none",
         alpha=data_alpha,
         s=spot_size,
-        marker="o",
+        marker="h",
         vmin=vmin,
         vmax=vmax,
         cmap=plt.get_cmap(cmap),
@@ -307,12 +321,7 @@ def gene_plot(
     if library_id is None:
         library_id = list(adata.uns["spatial"].keys())[0]
 
-    image = adata.uns["spatial"][library_id]["images"][
-        adata.uns["spatial"][library_id]["use_quality"]]
-    scale_size = (image.shape[1] * scale_factor, image.shape[0] * scale_factor)
-    image_pil = Image.fromarray(image)
-    image_pil.thumbnail(scale_size, Image.ANTIALIAS)
-    image = np.array(image_pil)
+    image = adata.uns["spatial"][library_id]["images"]["hires"]
     # Overlay the tissue image
     a.imshow(image, alpha=tissue_alpha, zorder=-1, )
 
@@ -331,13 +340,13 @@ def gene_plot(
     if name is None:
         name = method
     if output is not None:
-        fig.savefig(output + "/" + name, dpi=plt.figure().dpi,
+        fig.savefig(output + "/" + name, dpi=300,
                     bbox_inches='tight', pad_inches=0)
 
-    plt.show()
+    return fig.canvas
 
 
-def _gene_plot(adata, method, genes):
+def _gene_plot(adata, method, genes, slot):
     # Gene plot option
 
     if len(genes) == 0:
@@ -348,8 +357,10 @@ def _gene_plot(adata, method, genes):
         if genes[0] not in adata.var.index:
             raise ValueError(
                 genes[0] + ' is not exist in the data, please try another gene')
-
-        colors = adata[:, genes].to_df().iloc[:, -1]
+        if slot is None:
+            colors = adata[:, genes].to_df().iloc[:, -1]
+        else:
+            colors = adata.obsm[slot][genes[0]]
 
         return colors
     else:
@@ -385,6 +396,99 @@ def _gene_plot(adata, method, genes):
         colors = count_gene
 
         return colors
+
+
+def pattern_matrix(adata: AnnData,
+                   genes: str = None,
+                   library_id: str = None,
+                   gc_slot: str = None,
+                   pred_slot: str = None
+                   ) -> Optional[np.float64]:
+    """\
+    Gene expression plot for spatial transcriptomics data.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix.
+    genes : str, optional
+        Choose a gene or a list of genes.
+    library_id : str, optional
+        Library id stored in AnnData.
+    gc_slot : str, optional
+        Slot name for the gene counts.
+    pred_slot : str, optional
+        Slot name for the predicted values.
+
+    Returns
+    -------
+    Optional[np.float64]
+        IoU Score
+    """
+
+    # plt.rcParams['figure.dpi'] = dpi
+    canvas = gene_plot(adata, genes=genes, slot=pred_slot, image_scale=True,
+                       library_id=library_id, spot_size=115, tissue_alpha=0,
+                       show_color_bar=False, show_axis=False)
+    canvas.draw()  # Draw the canvas, cache the renderer
+    image_flat = np.frombuffer(
+        canvas.tostring_rgb(),
+        dtype='uint8')  # (H * W * 3,)
+
+    # NOTE: reversed converts (W, H) from get_width_height to (H, W)
+    image_pred = image_flat.reshape(*reversed(canvas.get_width_height()), 3)
+
+    canvas = gene_plot(adata, genes=genes, slot=gc_slot, image_scale=True,
+                       library_id=library_id, spot_size=115, tissue_alpha=0,
+                       show_color_bar=False, show_axis=False)
+
+    canvas.draw()  # Draw the canvas, cache the renderer
+    image_flat = np.frombuffer(
+        canvas.tostring_rgb(),
+        dtype='uint8')  # (H * W * 3,)
+
+    # NOTE: reversed converts (W, H) from get_width_height to (H, W)
+    image_gc = image_flat.reshape(*reversed(canvas.get_width_height()), 3)
+
+    image_pred_r = _generate_binary_img(image_pred)
+    image_gc_r = _generate_binary_img(image_gc)
+
+    score = jaccard_score(image_gc_r, image_pred_r, average=None)[0]
+
+    return score
+
+
+def _generate_binary_img(img: np.ndarray,
+                         sigma: list = [1.0, 1.0],
+                         ) -> np.ndarray:
+    """\
+    Generate binary image from input image.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        Input image.
+
+    sigma : list, optional
+        Standard deviation for Gaussian smoothing in X and Y directions, default is [1.0, 1.0].
+
+    Returns
+    -------
+    np.ndarray
+        Binary image.
+    """
+
+    thresh_b = threshold_multiotsu(img[:, :, 0])
+    img_b_b = np.where((img[:, :, 0] < thresh_b[0]), True, False)
+    thresh_r = threshold_multiotsu(img[:, :, 2])
+    img_r_b = np.where((img[:, :, 2] < thresh_r[0]), True, False)
+
+    img_r_b_f = sp.ndimage.filters.gaussian_filter(
+        img_r_b, sigma, mode='constant')
+
+    img_r = img_r_b_f[img[:, :, 0] != 255]
+
+    return img_r
 
 
 """Reading and Writing
