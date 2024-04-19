@@ -12,6 +12,12 @@ Additionally, a single-cell reference atlas is needed to generate the cell type 
 ### 0. Installation
 The `environment.yml` contains the required dependencies for the conda environment.
 
+Example:
+```commandline
+$ conda env create --prefix /scratch/project_mnt/andrew/conda/hovernet --file /scratch/project_mnt/andrew/STimage/development/Xenium_classification/environment.yml
+$ conda activate hovernet 
+```
+
 Computing performance metrics relies on some code from https://github.com/meszlili96/PanNukeChallenge. This repository should be cloned into the same folder as this source.
 
 
