@@ -10,6 +10,12 @@ The following data are required for each training sample (sequenced whole slide 
 Additionally, a single-cell reference atlas is needed to generate the cell type labels.
 
 ### 0. Installation
+
+Modules to load:
+```commandline
+$ module load gcc/12 # Otherwise ICU with fail with OSError: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.30' not found
+```
+
 The `environment.yml` contains the required dependencies for the conda environment.
 
 Example:
