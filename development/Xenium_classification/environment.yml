@@ -147,13 +147,13 @@ dependencies:
   - zstd=1.5.5
   - pip:
       - absl-py==2.1.0
-      - aiobotocore==2.12.3
+      - aiobotocore
       - aiohttp==3.9.5
       - aioitertools==0.11.0
       - aiosignal==1.3.1
       - alabaster==0.7.16
       - albumentations==1.3.1
-      - anndata==0.10.5.post1
+      - anndata
       - annotated-types==0.6.0
       - anyio==4.3.0
       - app-model==0.2.6
@@ -173,7 +173,7 @@ dependencies:
       - bleach==6.1.0
       - blessed==1.20.0
       - boto3==1.34.69
-      - botocore==1.34.69
+      - botocore
       - build==1.2.1
       - cached-property==1.5.2
       - cachey==0.2.1
@@ -190,8 +190,8 @@ dependencies:
       - croniter==2.0.5
       - cycler==0.12.1
       - cython==3.0.10
-      - dask==2024.4.2
-      - dask-expr==1.0.12
+      - dask==2024.2.1
+      - dask-expr
       - dask-image==2023.8.1
       - datashader==0.16.1
       - datashape==0.5.2
@@ -200,7 +200,7 @@ dependencies:
       - decorator==5.1.1
       - deepdiff==7.0.1
       - defusedxml==0.7.1
-      - distributed==2024.4.2
+      - distributed
       - dm-tree==0.1.8
       - docrep==0.3.2
       - docstring-parser==0.16
@@ -269,7 +269,7 @@ dependencies:
       - lightning==2.1.4
       - lightning-cloud==0.5.66
       - lightning-utilities==0.11.2
-      - llvmlite==0.40.1
+      - llvmlite
       - locket==1.0.0
       - loguru==0.7.2
       - magicgui==0.8.2
@@ -304,9 +304,9 @@ dependencies:
       - nest-asyncio==1.6.0
       - notebook-shim==0.2.4
       - npe2==0.7.5
-      - numba==0.57.1
+      - numba
       - numcodecs==0.12.1
-      - numpy==1.21.6
+      - numpy
       - numpydoc==1.7.0
       - numpyro==0.12.1
       - ome-zarr==0.8.3
@@ -321,7 +321,7 @@ dependencies:
       - ordered-set==4.1.0
       - overrides==7.7.0
       - packaging==24.0
-      - pandas==2.0.3
+      - pandas
       - pandocfilters==1.5.1
       - param==2.1.0
       - parso==0.8.4
@@ -384,13 +384,13 @@ dependencies:
       - rich==13.7.1
       - rpds-py==0.18.0
       - runs==1.2.2
-      - s3fs==0.6.0
+      - s3fs
       - s3transfer==0.10.1
       - safetensors==0.4.3
       - scanpy==1.9.3
-      - scikit-image==0.21.0
+      - scikit-image
       - scikit-learn==1.4.2
-      - scipy==1.11.4
+      - scipy
       - scvi-tools==1.1.2
       - seaborn==0.13.2
       - send2trash==1.8.3
@@ -407,7 +407,7 @@ dependencies:
       - spams==2.6.5.4
       - sparse==0.15.1
       - spatial-image==0.3.0
-      - spatialdata==0.0.15
+      - spatialdata==0.1.2
       - spatialdata-io==0.1.2
       - spatialdata-plot==0.2.1
       - sphinx==7.3.7
@@ -463,14 +463,14 @@ dependencies:
       - websocket-client==1.7.0
       - websockets==12.0
       - wrapt==1.16.0
-      - xarray==2022.12.0
-      - xarray-dataclasses==1.5.0
-      - xarray-datatree==0.0.13
+      - xarray
+      - xarray-dataclasses
+      - xarray-datatree
       - xarray-schema==0.0.3
       - xarray-spatial==0.3.7
       - xmod==1.8.1
       - yarl==1.9.4
-      - zarr==2.17.1
+      - zarr==2.17.2
       - zict==3.0.0
       - zipp==3.18.1
 prefix: /scratch/project_mnt/S0010/Andrew_N/conda/hovernet
