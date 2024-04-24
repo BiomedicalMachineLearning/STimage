@@ -41,13 +41,16 @@ Alternatively, the labels can be provided in the form of a geopandas dataframe. 
 
 
 ### 2. Register H&E image
+
+You can use Xenium Explorer to produce a transformation matrix:
+https://www.10xgenomics.com/support/software/xenium-explorer/latest/tutorials/xe-image-alignment
+
 The H&E image must be registered to the Xenium DAPI data, which can be done with SIFT or similar methods. An affine transformation matrix should be saved as a csv file, with the standard 2x3 format. Example:
 
 ```
 -0.002511365031637, -0.776020225795623, 27762.2568957
 0.775820476630406, -0.00237876719423, -1158.81828889
 ```
-
 
 ### 3. Generate training data
 The following command generates the training data (cell masks and H&E tiles) given the Xenium data and H&E image. 
