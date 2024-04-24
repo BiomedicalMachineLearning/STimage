@@ -20,6 +20,7 @@ from xarray import DataArray
 from spatialdata_io._constants._constants import VisiumKeys
 from spatialdata_io._docs import inject_docs
 from spatialdata_io.readers._utils._utils import _read_counts
+from spatialdata.models._utils import DEFAULT_COORDINATE_SYSTEM
 
 # from https://github.com/scverse/spatialdata-io/blob/main/src/spatialdata_io/readers/visium.py#L141
 def load_registered_image(tif_path):
@@ -128,11 +129,14 @@ def sdata_load_img_mask(sdata, affineT=None,
     # If using bbox, transform shapes then translate back to origin
     t_shapes = Sequence([get_transformation(sdata.shapes[shape_key]),
                          get_transformation(sdata.images[img_key]).inverse()])
-    shapes = transform(sdata.shapes[shape_key], transformation=t_shapes)
+                         
+    set_transformation(sdata.shapes[shape_key], t_shapes)
+    shapes = transform(sdata.shapes[shape_key], to_coordinate_system=DEFAULT_COORDINATE_SYSTEM)
     # Affine transform
     if affineT:
-        shapes = transform(shapes, affineT)
-    shapes.index = shapes.index.astype(int)
+        set_transformation(shapes, affineT)
+        shapes = transform(shapes, to_coordinate_system=DEFAULT_COORDINATE_SYSTEM)
+    # shapes.index = shapes.index.astype(int)
     # NOTE: Bounding box query resets (removes) categories for the adata table
     # so, can use the original labels instead
     # labels = labels.loc[sdata.table.obs.index][label_key].to_frame()

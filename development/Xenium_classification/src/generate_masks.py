@@ -46,11 +46,10 @@ def main(args):
     out_dir = args.out_dir
     img_dir = f"{out_dir}/images"
     mask_dir = f"{out_dir}/masks"
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-        os.makedirs(img_dir)
-        os.makedirs(mask_dir)
-    warnings.warn("Created output directories")
+    for dir in [out_dir, img_dir, mask_dir]:
+        if not os.path.exists(dir):
+            warnings.warn(f'Creating output directory {dir}')
+            os.makedirs(dir)
 
     # Load data
     warnings.warn("Loading data...")
