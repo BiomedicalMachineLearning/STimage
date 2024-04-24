@@ -42,19 +42,21 @@ Alternatively, the labels can be provided in the form of a geopandas dataframe. 
 
 ### 2. Register H&E image and Alignment
 
-* H&E images are assumed to be RGB or RGBA.
-* You can use Xenium Explorer to produce a transformation matrix:
-https://www.10xgenomics.com/support/software/xenium-explorer/latest/tutorials/xe-image-alignment
-* register.py uses OpenCV to also generate these matrices.
+The H&E image must be registered to the Xenium DAPI data.
 
-The H&E image must be registered to the Xenium DAPI data, which can be done with SIFT or similar methods. An affine transformation matrix should be saved as a csv file, with the standard 2x3 format. Example:
+* You can use Xenium Explorer to produce a transformation matrix and keypoints:
+https://www.10xgenomics.com/support/software/xenium-explorer/latest/tutorials/xe-image-alignment
+* register.py uses OpenCV to also generate these files.
+    * The input to this will be a greyscale TIF (DAPI) to generate the matrix and keypoints.
+
+An affine transformation matrix should be saved as a csv file, with the standard 2x3 format. Example:
 
 ```
 -0.002511365031637, -0.776020225795623, 27762.2568957
 0.775820476630406, -0.00237876719423, -1158.81828889
 ```
 
-To align the DAPI with the matrix use the following script:
+Registration and alignment requires the transformation matrix. To align the RGB H&E image:
 ```
 python ./src/alignment.py --out-dir OUT_DIR --tif-path RGB_MORPHOLOGY_OME_FILE --transform TRANSFORM_PATH
 ```
