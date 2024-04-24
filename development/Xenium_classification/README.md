@@ -34,7 +34,6 @@ These labels are then processed and stored into an anndata object for the Xenium
 
 ```
 python load_annotations.py --xenium XENIUM_DIR --annotated ANNOTATED_PATH --out-dir OUT_DIR
-
 ```
 
 Alternatively, the labels can be provided in the form of a geopandas dataframe. See `generate_masks.py` for details.
@@ -42,13 +41,16 @@ Alternatively, the labels can be provided in the form of a geopandas dataframe. 
 
 ### 2. Register H&E image and Alignment
 
-The H&E image must be registered to the Xenium DAPI data.
+The full-color H&E image must be registered to the Xenium DAPI data to ensure proper alignment between the morphological information and the spatial gene expression data.
 
-* You can use Xenium Explorer to produce a transformation matrix and keypoints:
+Two ways to perform the registration:
+* Using Xenium Explorer:
+  - You can use Xenium Explorer to produce a transformation matrix and keypoints:
 https://www.10xgenomics.com/support/software/xenium-explorer/latest/tutorials/xe-image-alignment
-* register.py uses OpenCV to also generate these files.
-    * The input to this will be a greyscale TIF (DAPI) to generate the matrix and keypoints.
-
+* Using the register.py script:
+  - Provide a greyscale DAPI TIFF image.
+  - Using OpenCV it generates the keypoints and transformation matrix.
+  
 An affine transformation matrix should be saved as a csv file, with the standard 2x3 format. Example:
 
 ```
@@ -60,6 +62,9 @@ Registration and alignment requires the transformation matrix. To align the RGB 
 ```
 python ./src/alignment.py --out-dir OUT_DIR --tif-path RGB_MORPHOLOGY_OME_FILE --transform TRANSFORM_PATH
 ```
+Here, `RGB_MORPHOLOGY_OME_FILE` is the path to the RGB H&E image file in OME-TIFF format and `TRANSFORM_PATH` is the CSV file containing the transformation matrix.
+
+Note: Make sure you have the necessary dependencies installed, such as OpenCV and any other required libraries, before running the scripts.
 
 ### 3. Generate training data
 The following command generates the training data (cell masks and H&E tiles) given the Xenium data and H&E image. 
