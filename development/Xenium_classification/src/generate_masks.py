@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+# coding: utf-8
+
 import spatialdata_io
 import squidpy as sq
 import spatialdata as sd

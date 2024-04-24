@@ -40,16 +40,22 @@ python load_annotations.py --xenium XENIUM_DIR --annotated ANNOTATED_PATH --out-
 Alternatively, the labels can be provided in the form of a geopandas dataframe. See `generate_masks.py` for details.
 
 
-### 2. Register H&E image
+### 2. Register H&E image and Alignment
 
-You can use Xenium Explorer to produce a transformation matrix:
+* You can use Xenium Explorer to produce a transformation matrix:
 https://www.10xgenomics.com/support/software/xenium-explorer/latest/tutorials/xe-image-alignment
+* register.py uses OpenCV to also generate these matrices.
 
 The H&E image must be registered to the Xenium DAPI data, which can be done with SIFT or similar methods. An affine transformation matrix should be saved as a csv file, with the standard 2x3 format. Example:
 
 ```
 -0.002511365031637, -0.776020225795623, 27762.2568957
 0.775820476630406, -0.00237876719423, -1158.81828889
+```
+
+To align the DAPI with the matrix use the following script:
+```
+python ./src/alignment.py --out-dir OUT_DIR --tif-path RGB_MORPHOLOGY_OME_FILE --transform TRANSFORM_PATH
 ```
 
 ### 3. Generate training data
