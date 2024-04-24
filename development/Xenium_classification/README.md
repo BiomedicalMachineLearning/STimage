@@ -42,6 +42,7 @@ Alternatively, the labels can be provided in the form of a geopandas dataframe. 
 
 ### 2. Register H&E image and Alignment
 
+* H&E images are assumed to be RGB or RGBA.
 * You can use Xenium Explorer to produce a transformation matrix:
 https://www.10xgenomics.com/support/software/xenium-explorer/latest/tutorials/xe-image-alignment
 * register.py uses OpenCV to also generate these matrices.
