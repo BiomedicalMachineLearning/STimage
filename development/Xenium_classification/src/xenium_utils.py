@@ -128,7 +128,7 @@ def sdata_load_img_mask(sdata, affineT=None,
     # If using bbox, transform shapes then translate back to origin
     t_shapes = Sequence([get_transformation(sdata.shapes[shape_key]),
                          get_transformation(sdata.images[img_key]).inverse()])
-    shapes = transform(sdata.shapes[shape_key], t_shapes)
+    shapes = transform(sdata.shapes[shape_key], transformation=t_shapes)
     # Affine transform
     if affineT:
         shapes = transform(shapes, affineT)
