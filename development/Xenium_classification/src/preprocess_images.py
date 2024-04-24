@@ -65,6 +65,7 @@ def main(args):
 	filter_list = []
 
 	for path in tqdm(paths):
+		to_remove = None
 		impath = imdir / f"{path}.png"
 		maskpath = maskdir / f"{path}.npy"
 
@@ -72,13 +73,17 @@ def main(args):
 		mask = np.load(str(maskpath))
 
 		# Filter 0-filled values from cropping
-        # NOTE: I think this is no longer needed
+    # NOTE: I think this is no longer needed
 		if img.any(axis=-1).mean() < 0.75:
-			filter_list.append(path)
-
-        # White space removal
+			if args.dry_run:
+				print(f"** 0 filled value - will move {path}")
+			to_remove = path
+			 
+    # White space removal
 		if white_filter(img):
-			filter_list.append(path)
+			if args.dry_run:
+				print(f"** white filter - will move {path}")
+			to_remove = path
         
 		# Filter small objects
 		# This could remove nuclei so run this first
@@ -89,10 +94,18 @@ def main(args):
 		mask[-1] = np.multiply(filter_mask_bg, mask[-1])
 
 		# Filter images for nuclei
-        # 2 is for 0,1 (bg/fg)
-		if len(np.unique(mask)) - 2 < args.nuclei_threshold:
-			filter_list.append(path)
+    # 2 is for 0,1 (bg/fg)
+		num_nuclei = len(np.unique(mask)) - 2
+		min_nuclei = args.nuclei_threshold
+		if num_nuclei < min_nuclei:
+			if args.dry_run:
+				print(f"** nuclei filter {num_nuclei} < {min_nuclei} - will move {path}")
+			to_remove = path
 
+		# If added to remove add to filter list 
+		if to_remove is not None:
+				filter_list.append(to_remove)
+		
 		# Stain normalisation
 		# TBA
 		# method = args.stain
@@ -108,13 +121,9 @@ def main(args):
 			if not args.dry_run:
 				impath.rename(remove_dir  / "images" / impath.name)
 				maskpath.rename(remove_dir  / "masks" / maskpath.name)
-			else:
-				print(f"Will move {impath} to {str(remove_dir  / 'images' / impath.name)}")
-				print(f"Will move {maskpath} to {str(remove_dir  / 'masks' / maskpath.name)}")
 
-	print("Tiles removed:")
+	print(f"Tiles removed ({len(filter_list)}/{len(paths)}):")
 	print(filter_list)
-
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
