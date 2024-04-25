@@ -390,7 +390,7 @@ dependencies:
       - sparse==0.14.0
       - spatial-image==0.3.0
       - spatialdata==0.0.9
-      - spatialdata-io==0.0.4
+      - spatialdata-io==0.0.9
       - spatialdata-plot==0.0.2
       - sphinx==4.5.0
       - sphinx-copybutton==0.5.2
