@@ -59,7 +59,7 @@ def main(args):
     else:
         sdata = spatialdata_io.xenium(args.xenium,
                                       n_jobs=8,
-                                      cells_as_circles=True,
+                                      cells_as_shapes=True,
                                           )
     tif_path = args.tif_path
     full_image_parsed = load_registered_image(tif_path)

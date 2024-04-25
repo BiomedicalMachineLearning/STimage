@@ -131,17 +131,19 @@ def sdata_load_img_mask(sdata, affineT=None,
                          get_transformation(sdata.images[img_key]).inverse()])
                          
     set_transformation(sdata.shapes[shape_key], t_shapes)
-    shapes = transform(sdata.shapes[shape_key], to_coordinate_system=DEFAULT_COORDINATE_SYSTEM)
+    # spatialdata 0.1.2 version
+    #shapes = transform(sdata.shapes[shape_key], to_coordinate_system=DEFAULT_COORDINATE_SYSTEM)
     # spatialdata 0.0.9 version
-    # shapes = transform(sdata.shapes[shape_key], t_shapes)
+    shapes = transform(sdata.shapes[shape_key], t_shapes)
     # Affine transform
     if affineT:
-        set_transformation(shapes, affineT)
-        shapes = transform(shapes, to_coordinate_system=DEFAULT_COORDINATE_SYSTEM)
+        # spatialdata 0.1.2 version
+        #set_transformation(shapes, affineT)
+        #shapes = transform(shapes, to_coordinate_system=DEFAULT_COORDINATE_SYSTEM)
         # spatialdata 0.0.9 version
-        #shapes = transform(shapes, affineT)
+        shapes = transform(shapes, affineT)
     # spatialdata 0.0.9 version
-    # shapes.index = shapes.index.astype(int)
+    shapes.index = shapes.index.astype(int)
     # NOTE: Bounding box query resets (removes) categories for the adata table
     # so, can use the original labels instead
     # labels = labels.loc[sdata.table.obs.index][label_key].to_frame()
