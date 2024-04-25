@@ -386,7 +386,7 @@ dependencies:
       - snowballstemmer==2.2.0
       - sortedcontainers==2.4.0
       - soupsieve==2.4.1
-      - spams==2.6.2.5
+      - spams==2.6.5.4
       - sparse==0.14.0
       - spatial-image==0.3.0
       - spatialdata==0.0.9
