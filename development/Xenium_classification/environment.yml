@@ -209,6 +209,7 @@ dependencies:
       - fastapi==0.88.0
       - fasteners==0.18
       - fastjsonschema==2.17.1
+      - fcsparser==0.2.8
       - fiona==1.9.6
       - flax==0.6.11
       - fonttools==4.39.4
@@ -257,6 +258,7 @@ dependencies:
       - jupyterlab-pygments==0.2.2
       - jupyterlab-server==2.22.1
       - kiwisolver==1.4.4
+      - lamin-utils==0.13.2
       - lazy-loader==0.2
       - leidenalg==0.9.1
       - lightning==2.0.2
@@ -363,6 +365,7 @@ dependencies:
       - qtpy==2.3.1
       - qudida==0.0.4
       - readchar==4.0.5
+      - readfcs==1.1.8
       - regex==2023.6.3
       - rfc3339-validator==0.1.4
       - rfc3986-validator==0.1.1
@@ -386,7 +389,7 @@ dependencies:
       - snowballstemmer==2.2.0
       - sortedcontainers==2.4.0
       - soupsieve==2.4.1
-      - spams==2.6.2.5
+      - spams==2.6.5.4
       - sparse==0.14.0
       - spatial-image==0.3.0
       - spatialdata==0.0.9
@@ -429,6 +432,7 @@ dependencies:
       - traitlets==5.9.0
       - transformers==4.30.2
       - typer==0.9.0
+      - typing-extensions==4.5.0
       - tzdata==2023.3
       - umap-learn==0.5.3
       - uri-template==1.2.0
