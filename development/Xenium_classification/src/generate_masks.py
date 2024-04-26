@@ -77,8 +77,8 @@ def main(args):
         sdata.table.obs['celltype_major'] = sdata.table.obs['celltype_major'].astype('category')
         assert len(sdata.table.obs['celltype_major'].cat.categories) == args.num_categories
         # Drop NA values
-            # FIXME: See comments in load_annotations
-            # We should not have any NA values
+        # FIXME: See comments in load_annotations
+        # We should not have any NA values
         # sdata.table.obs = sdata.table.obs.dropna()
         # sdata.table.write(f"{out_dir}/adata_filtered.h5ad")
         print(sdata.table.obs['celltype_major'].head(15))
