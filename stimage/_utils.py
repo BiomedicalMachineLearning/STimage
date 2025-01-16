@@ -162,7 +162,7 @@ def QC_plot(
         adata.uns["spatial"][library_id]["use_quality"]]
     scale_size = (image.shape[1] * scale_factor, image.shape[0] * scale_factor)
     image_pil = Image.fromarray(image)
-    image_pil.thumbnail(scale_size, Image.ANTIALIAS)
+    image_pil.thumbnail(scale_size, Image.Resampling.LANCZOS)
     image = np.array(image_pil)
     # Overlay the tissue image
     a.imshow(
@@ -818,7 +818,7 @@ def tiling(
             )
             if stain_normaliser:
                 tile = stain_normaliser.transform_tile(tile)
-            # tile.thumbnail((target_size, target_size), Image.ANTIALIAS)
+            # tile.thumbnail((target_size, target_size), Image.Resampling.LANCZOS)
             tile = tile.resize((target_size, target_size))
             tile_name = library_id + "-" + \
                 str(imagecol) + "-" + str(imagerow) + "-" + str(crop_size)
@@ -845,6 +845,7 @@ def calculate_bg(
         stain_normaliser=None,
         crop_size: int = 40,
         library_id: str = None,
+        temp_TILE_PATH: Union[Path, str] = Path("./tmp"),
         copy: bool = False,
 ) -> Optional[AnnData]:
     """\
@@ -882,9 +883,9 @@ def calculate_bg(
     target_img_norm_filtered = filter_grays(
         target_img_norm_filtered, tolerance=3)
     tissue_mask = tissue_mask_grabcut(np.array(target_img_norm_filtered))
-    tissue_mask_up_scale = tissue_mask.resize(img.size, Image.ANTIALIAS)
+    tissue_mask_up_scale = tissue_mask.resize(img.size, Image.Resampling.LANCZOS)
 
-    _TILE_PATH = Path("/tmp") / \
+    _TILE_PATH = temp_TILE_PATH / \
         (list(adata.uns["spatial"].keys())[0] + "_tissue_mask")
     _TILE_PATH.mkdir(parents=True, exist_ok=True)
 
