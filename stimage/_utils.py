@@ -1079,7 +1079,7 @@ def tissue_mask_grabcut(img):
 
     # Use rough mask to remove small debris in grabcut mask
     mask_cleaned = cv.bitwise_and(mask_final, mask_final, mask=mask_opened)
-    mask_cleaned_pil = Image.fromarray(mask_cleaned.astype(np.bool))
+    mask_cleaned_pil = Image.fromarray(mask_cleaned.astype(bool))
     return mask_cleaned_pil
 
 
