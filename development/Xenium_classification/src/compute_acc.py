@@ -8,10 +8,7 @@ import cv2
 import numpy as np
 import scipy.io as sio
 import pandas as pd
-
-import sys
-sys.path.append('./PanNukeChallenge/src')
-from metrics.stats_utils import *
+from stats_utils import *
 
 def get_fast_aji(true, pred):
     # Modified

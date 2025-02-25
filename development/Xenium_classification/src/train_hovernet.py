@@ -28,7 +28,7 @@ from scanpy import read_h5ad
 import os
 from sklearn.utils.class_weight import compute_class_weight
 import pandas as pd
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 def save_dict_as_json(dictionary, filename):
     with open(filename, 'w') as file:
@@ -114,7 +114,7 @@ def main(args):
     
     print(f"GPUs used:\t{torch.cuda.device_count()}")
     device = torch.device("cuda:0")
-        # device = torch.device("cpu")
+        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device:\t\t{device}")
 
     random.seed(args.seed)
@@ -298,15 +298,16 @@ def main(args):
                     hv = data[2].float().to(device)
                     label = data[3]
     
-            #FIXME: bg mask should be a proper binary tensor/array
-            # This line is temporary until I rerun the fixed save_masks.py
+                    #FIXME: bg mask should be a proper binary tensor/array
+                    # This line is temporary until I rerun the fixed save_masks.py
                     # masks[:,-1,:,:] = (masks[:,-1,:,:] != 0)*1.
 
                     # forward pass
                     outputs = hovernet(images)
     
                     # compute loss
-                    loss = loss_hovernet(outputs = outputs, ground_truth = [masks, hv], n_classes=n_classes)
+                    loss = loss_hovernet_ce(outputs = outputs, ground_truth = [masks, hv], df_targets = None, n_classes=n_classes, weight=weights, factors=factors)
+                    
     
                     # track loss
                     minibatch_valid_losses.append(loss.item())

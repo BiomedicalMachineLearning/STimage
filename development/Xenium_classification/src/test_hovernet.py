@@ -24,7 +24,7 @@ from convnext import Convnext_HoverNetDecoder
 import timm
 
 import os
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 def main(args):
 
@@ -71,7 +71,7 @@ def main(args):
         data = XDataModule(
             data_dir=dataset, 
             nucleus_type_labels=True, 
-            batch_size=64,  ## MADE IT LARGER 
+            batch_size=12,  ## MADE IT LARGER 
             hovernet_preprocess=True,
             split=split,
             transforms=transform,
