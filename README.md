@@ -6,7 +6,27 @@ STimage - *I*nterpretable *M*achine learning *A*pplication for *G*ene *E*xpressi
 
 ## Description
 
-We developed STimage, a deep-learning framework to train on few spatial transcriptomics data and classify and estimate gene expression. The STimage classification model predicts the presence/absence, high/low expression of a gene or a group of genes, while the regression model predicts continuous expression values of one or more genes. Different to existing models, STimage estimates Negative Binomial parameters of gene expression distribution rather than a fixed data point, allowing the assessment of prediction confidence. The model interpretation was assessed by scoring feature importance at a single-cell level. The model performance was also evaluated using an independent, non-spatial imaging dataset, showing results consistent with pathological annotation. STimage addresses key technical limitations to enable the integration of spatial transcriptomics data and deep learning into the current pathological workflow to help doctors better analyse patient samples.
+Spatial transcriptomic (ST) imaging and sequencing data enable us to link tissue morphological features with thousands
+of previously unseen gene expression values, opening a new horizon for understanding tissue biology and achieving
+breakthroughs in digital pathology. Deep learning models are emerging to predict gene expression or classify cell types
+using images as the sole input. Such models hold significant potential for clinical applications, but require improvements
+in interpretability and robustness. We developed STimage as a comprehensive suite of models for both regression
+(predicting gene expression) and classification (mapping tissue regions and cell types) tasks. STimage is the first to
+thoroughly address robustness (uncertainty) and interpretability. For robustness, STimage predicts gene expression based
+on parameter distributions rather than fixed data points, allowing for generalisation at a population scale. STimage
+estimates uncertainty from the data (aleatoric) and from the model (epistemic) for each of thousands of imaging
+tiles. STimage achieves interpretability by analysing model attribution at a single-cell level, and in the context of
+histopathological annotation. While existing models focus on predicting highly variable genes, STimage predicts functional
+genes and identifies highly predictable genes. Using diverse datasets from three cancers and one chronic disease, we
+assessed the model’s performance on in-distribution and out-of-distribution samples. STimage is robust to technical
+variations across platforms, data types, sample preservation methods, and disease types. Further, we implemented an
+ensemble approach, incorporating pre-trained foundation models, to improve performance and reliability, especially in
+cases with small training datasets. With single-cell resolution Xenium data, STimage could classify cell types for millions
+of individual cells. Applying STimage to proteomics data such as CODEX, we found that STimage can predict gene
+expression consistent with protein expression patterns. Finally, we showed that using STimage-predicted values based
+solely on imaging input, we could stratify patient survival groups. Overall, STimage advances spatial transcriptomics
+by improving the prediction of gene expression from traditional histopathological images, making it more accessible for
+tissue biology research and digital pathology applications.
 
 ## Installation
 
@@ -110,13 +130,22 @@ Observed expression of gene *TTLL12* | Predicted  expression of gene *TTLL12*
 :-----------------------------------:|:--------------------------------------: 
 ![plot](./plots/gc.png)              | ![plot](./plots/pred.png)
 
- 
+### Pattern matrix
+![plot](./plots/pattern_matrix.png)
+
+### Benchmark
+![plot](./plots/benchmark.png)
+
 ### LIME interpretation
 ![plot](./plots/LIME.png)
 
-### Evaluation --- spatial autocorrelation
-![plot](./plots/spatial_autocorrelation_1.png)
-![plot](./plots/spatial_autocorrelation_2.png)
+### TCGA survival analysis
+![plot](./plots/TCGA_survival.png)
+
+### Single cell cell type prediction
+cell type spatial plot | confusion matrix
+:-----------------------------------:|:--------------------------------------: 
+![plot](./plots/single_cell_prediction.png) | ![plot](./plots/single_cell_prediction_2.png)
 
 ### interactive webtool
 
