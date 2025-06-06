@@ -149,7 +149,7 @@ cell type spatial plot | confusion matrix
 
 ### interactive webtool
 
-This [interactive webtool](https://stimage-web-app-rnkimhgefgledvauvhamd4.streamlit.app/) will allow you to upload your own image to predict the gene expression and visualize the model performance and interpretation. 
+This [interactive webtool](https://gml-stimage-web-app.streamlit.app/) will allow you to upload your own image to predict the gene expression and visualize the model performance and interpretation. 
 
 ## Citing STimage
 
